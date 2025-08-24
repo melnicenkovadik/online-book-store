@@ -76,5 +76,5 @@ npm run build        # Сборка для продакшена
 npm run start        # Запуск продакшен сервера
 npm run lint         # Проверка кода
 npm run format       # Форматирование кода
-npm run check:env    # Проверка переменных окружения
+
 ```

@@ -14,7 +14,7 @@ export async function connectToDB() {
 
   if (!globalWithMongoose._mongoosePromise) {
     const { MONGODB_URI } = getEnv();
-    
+
     // Recommended mongoose options (Mongoose 8 has sensible defaults)
     globalWithMongoose._mongoosePromise = mongoose
       .connect(MONGODB_URI)

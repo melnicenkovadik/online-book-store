@@ -3,18 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run check:env && next dev --turbopack -p 3000",
-    "build": "npm run check:env && next build --turbopack",
-    "start": "next start -p 3000",
+    "dev": "next dev --turbopack -p 3000",
+    "build": "next build --turbopack",
+    "start": "next start",
     "lint:ts": "tsc --noEmit",
     "lint": "biome check",
     "format": "biome format --write",
-    "check:env": "node scripts/check-env.js",
     "snapshot:src": "node scripts/create-snapshot.js src src-snapshot.md",
     "snapshot:components": "node scripts/create-snapshot.js src/components components-snapshot.md",
     "snapshot:uikit": "node scripts/create-snapshot.js src/components/uikit uikit-snapshot.md",
     "snapshot:api": "node scripts/create-snapshot.js src/app/api api-snapshot.md",
-    "snapshot:full": "node scripts/create-snapshot.js . project-snapshot.md"
+    "snapshot:full": "node scripts/create-snapshot.js . project-snapshot.md",
+    "prepare": "husky"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",
@@ -41,8 +41,21 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
     "sass": "^1.77.0",
     "ts-node": "^10.9.2",
+    "tsc-files": "^1.1.4",
     "typescript": "^5"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "biome check",
+      "tsc-files --noEmit"
+    ],
+    "*.{json,md}": [
+      "biome check"
+    ]
   }
 }

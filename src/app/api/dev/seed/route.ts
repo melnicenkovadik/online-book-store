@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
+import { getEnv } from "@/lib/env";
 import { CategoryModel } from "@/lib/models/Category";
 import { ProductModel } from "@/lib/models/Product";
 import {
   categories as mockCategories,
   products as mockProducts,
 } from "@/mocks/catalog";
-import { getEnv } from "@/lib/env";
 
 export async function POST(req: Request) {
   const { SEED_TOKEN } = getEnv();

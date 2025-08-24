@@ -5,7 +5,7 @@ export async function POST(req: Request) {
   try {
     const { password } = await req.json();
     const { ADMIN_PASSWORD } = getEnv();
-    
+
     if (!password || password !== ADMIN_PASSWORD) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
