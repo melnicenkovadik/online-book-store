@@ -1,0 +1,138 @@
+.page {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-width: 240px;
+}
+
+.selectTrigger {
+  min-width: 220px;
+}
+
+.numberInput {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  width: 120px;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.cardTitle {
+  font-weight: 700;
+}
+
+.cardMeta {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.priceRow {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.oldPrice {
+  opacity: 0.6;
+}
+
+.stock {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Skeleton card for loading state */
+.skeletonCard {
+  height: 160px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* Empty state */
+.empty {
+  display: grid;
+  gap: 8px;
+  align-items: center;
+  justify-items: center;
+  padding: 24px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+}
+
+.emptyTitle {
+  font-weight: 700;
+}
+
+.emptyText {
+  opacity: 0.8;
+}

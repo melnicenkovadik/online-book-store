@@ -1,0 +1,17 @@
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+}
+.content {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: 12px; border: 1px solid #e5e7eb;
+  min-width: 320px; max-width: calc(100vw - 32px);
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.title { font-weight: 700; font-size: 1.05rem; }
+.description { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
+.closeBtn { cursor: pointer; opacity: 0.8; }
+.closeBtn:hover { opacity: 1; }

@@ -1,0 +1,20 @@
+.content {
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px;
+  min-width: 180px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.item:hover { background: rgba(0,0,0,0.06); }
+.separator { height: 1px; background: #eee; margin: 6px; }
+.label { font-size: 12px; opacity: 0.7; padding: 4px 8px; }

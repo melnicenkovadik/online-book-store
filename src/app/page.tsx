@@ -3,8 +3,8 @@ import styles from "./page.module.css";
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
+    <div className={styles.page} id="home-page">
+      <main className={styles.main} id="home-main">
         <Image
           className={styles.logo}
           src="/next.svg"
@@ -12,20 +12,22 @@ export default function Home() {
           width={180}
           height={38}
           priority
+          id="home-logo"
         />
-        <ol>
-          <li>
+        <ol id="home-instructions">
+          <li id="home-instruction-edit">
             Get started by editing <code>src/app/page.tsx</code>.
           </li>
-          <li>Save and see your changes instantly.</li>
+          <li id="home-instruction-save">Save and see your changes instantly.</li>
         </ol>
 
-        <div className={styles.ctas}>
+        <div className={styles.ctas} id="home-ctas">
           <a
             className={styles.primary}
             href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
             target="_blank"
             rel="noopener noreferrer"
+            id="home-cta-deploy"
           >
             <Image
               className={styles.logo}
@@ -33,6 +35,7 @@ export default function Home() {
               alt="Vercel logomark"
               width={20}
               height={20}
+              id="home-cta-deploy-logo"
             />
             Deploy now
           </a>
@@ -41,16 +44,18 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
             className={styles.secondary}
+            id="home-cta-docs"
           >
             Read our docs
           </a>
         </div>
       </main>
-      <footer className={styles.footer}>
+      <footer className={styles.footer} id="home-footer">
         <a
           href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
           target="_blank"
           rel="noopener noreferrer"
+          id="home-footer-learn"
         >
           <Image
             aria-hidden
@@ -58,6 +63,7 @@ export default function Home() {
             alt="File icon"
             width={16}
             height={16}
+            id="home-footer-learn-icon"
           />
           Learn
         </a>
@@ -65,6 +71,7 @@ export default function Home() {
           href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
           target="_blank"
           rel="noopener noreferrer"
+          id="home-footer-examples"
         >
           <Image
             aria-hidden
@@ -72,6 +79,7 @@ export default function Home() {
             alt="Window icon"
             width={16}
             height={16}
+            id="home-footer-examples-icon"
           />
           Examples
         </a>
@@ -79,6 +87,7 @@ export default function Home() {
           href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
           target="_blank"
           rel="noopener noreferrer"
+          id="home-footer-next"
         >
           <Image
             aria-hidden
@@ -86,6 +95,7 @@ export default function Home() {
             alt="Globe icon"
             width={16}
             height={16}
+            id="home-footer-next-icon"
           />
           Go to nextjs.org →
         </a>

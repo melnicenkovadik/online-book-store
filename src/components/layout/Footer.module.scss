@@ -1,0 +1,26 @@
+.footer {
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  margin-top: 32px;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.copy {
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
