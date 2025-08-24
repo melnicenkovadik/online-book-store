@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 
 // Конфігурація Cloudinary
 cloudinary.config({
@@ -6,26 +6,6 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-export interface CloudinaryUploadResult {
-  public_id: string;
-  version: number;
-  signature: string;
-  width: number;
-  height: number;
-  format: string;
-  resource_type: string;
-  created_at: string;
-  tags: string[];
-  bytes: number;
-  type: string;
-  etag: string;
-  placeholder: boolean;
-  url: string;
-  secure_url: string;
-  folder: string;
-  original_filename: string;
-}
 
 /**
  * Завантажує зображення в Cloudinary
@@ -36,7 +16,7 @@ export interface CloudinaryUploadResult {
 export async function uploadImageToCloudinary(
   buffer: Buffer,
   filename: string
-): Promise<CloudinaryUploadResult> {
+): Promise<UploadApiResponse> {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload_stream(
       {
@@ -58,7 +38,7 @@ export async function uploadImageToCloudinary(
           reject(error);
         } else if (result) {
           console.log('✅ Cloudinary upload success:', result.secure_url);
-          resolve(result as CloudinaryUploadResult);
+          resolve(result);
         } else {
           reject(new Error('Unknown error occurred'));
         }
