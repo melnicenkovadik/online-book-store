@@ -19,6 +19,8 @@ jobs:
       CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME || 'test' }}
       CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY || '123456789' }}
       CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET || 'test-secret' }}
+      # Set CI flag to true
+      CI: true
 
     steps:
     - uses: actions/checkout@v3
@@ -34,9 +36,11 @@ jobs:
 
     - name: TypeScript check
       run: npm run lint:ts
+      continue-on-error: false
 
     - name: Biome check
       run: npm run lint
+      continue-on-error: false
 
     - name: Build
       run: npm run build
