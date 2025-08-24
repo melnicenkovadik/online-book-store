@@ -1,5 +1,5 @@
-import React from 'react';
-import CatalogClient from './CatalogClient';
+import React from "react";
+import CatalogClient from "./CatalogClient";
 
 export default function CatalogPage() {
   return (

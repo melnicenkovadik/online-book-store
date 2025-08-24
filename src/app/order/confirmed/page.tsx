@@ -1,5 +1,5 @@
-import React from 'react';
-import ConfirmationClient from './ConfirmationClient';
+import React from "react";
+import ConfirmationClient from "./ConfirmationClient";
 
 export default function ConfirmationPage() {
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 
 export default function AdminSettingsPage() {
   const [status, setStatus] = React.useState<string | null>(null);
@@ -10,14 +10,16 @@ export default function AdminSettingsPage() {
     setLoading(true);
     setStatus(null);
     try {
-      const res = await fetch('/api/admin/dev/seed', { method: 'POST' });
+      const res = await fetch("/api/admin/dev/seed", { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || 'Seed failed');
+        throw new Error(data?.error || "Seed failed");
       }
-      setStatus(`OK: categories=${data.categories}, products=${data.products}, upserts=${data.upserts}`);
-    } catch (e: any) {
-      setStatus(`Error: ${e.message}`);
+      setStatus(
+        `OK: categories=${data.categories}, products=${data.products}, upserts=${data.upserts}`,
+      );
+    } catch (e: unknown) {
+      setStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setLoading(false);
     }
@@ -30,8 +32,18 @@ export default function AdminSettingsPage() {
       <section style={{ marginTop: 16 }}>
         <h3>Дані для демо</h3>
         <p>Імпорт категорій та товарів з моків у базу даних.</p>
-        <button onClick={seed} disabled={loading} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer' }}>
-          {loading ? 'Імпорт...' : 'Засіяти базу (категорії + товари)'}
+        <button
+          type="button"
+          onClick={seed}
+          disabled={loading}
+          style={{
+            padding: "8px 12px",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            cursor: "pointer",
+          }}
+        >
+          {loading ? "Імпорт..." : "Засіяти базу (категорії + товари)"}
         </button>
         {status && <div style={{ marginTop: 8 }}>{status}</div>}
       </section>

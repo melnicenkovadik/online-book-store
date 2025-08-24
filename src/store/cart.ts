@@ -1,7 +1,7 @@
 "use client";
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export type CartItem = {
   productId: string;
@@ -14,7 +14,7 @@ export type CartItem = {
 
 export type CartState = {
   items: Record<string, CartItem>; // key by productId
-  add: (item: Omit<CartItem, 'qty'>, qty?: number) => void;
+  add: (item: Omit<CartItem, "qty">, qty?: number) => void;
   remove: (productId: string) => void;
   setQty: (productId: string, qty: number) => void;
   clear: () => void;
@@ -51,15 +51,23 @@ export const useCart = create<CartState>()(
             return { items: rest };
           }
           return {
-            items: { ...state.items, [productId]: { ...state.items[productId], qty: next } },
+            items: {
+              ...state.items,
+              [productId]: { ...state.items[productId], qty: next },
+            },
           };
         }),
       clear: () => set({ items: {} }),
-      count: () => Object.values(get().items).reduce((acc, it) => acc + it.qty, 0),
-      subtotal: () => Object.values(get().items).reduce((acc, it) => acc + it.price * it.qty, 0),
+      count: () =>
+        Object.values(get().items).reduce((acc, it) => acc + it.qty, 0),
+      subtotal: () =>
+        Object.values(get().items).reduce(
+          (acc, it) => acc + it.price * it.qty,
+          0,
+        ),
     }),
     {
-      name: 'cart',
+      name: "cart",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ items: state.items }),
       version: 1,

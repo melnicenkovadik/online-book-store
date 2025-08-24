@@ -18,7 +18,9 @@ export default function Home() {
           <li id="home-instruction-edit">
             Get started by editing <code>src/app/page.tsx</code>.
           </li>
-          <li id="home-instruction-save">Save and see your changes instantly.</li>
+          <li id="home-instruction-save">
+            Save and see your changes instantly.
+          </li>
         </ol>
 
         <div className={styles.ctas} id="home-ctas">

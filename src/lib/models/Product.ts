@@ -1,17 +1,5 @@
-import mongoose, { Schema, models, model } from 'mongoose';
-
-export type ProductDoc = {
-  _id: mongoose.Types.ObjectId;
-  title: string;
-  slug: string;
-  sku: string;
-  price: number;
-  salePrice?: number | null;
-  stock: number;
-  images: string[];
-  attributes: Record<string, any>;
-  categoryIds: mongoose.Types.ObjectId[];
-};
+import { type Model, model, models, Schema } from "mongoose";
+import type { ProductDoc } from "@/types/database";
 
 const ProductSchema = new Schema<ProductDoc>({
   title: { type: String, required: true },
@@ -22,7 +10,9 @@ const ProductSchema = new Schema<ProductDoc>({
   stock: { type: Number, default: 0 },
   images: { type: [String], default: [] },
   attributes: { type: Schema.Types.Mixed, default: {} },
-  categoryIds: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
+  categoryIds: [{ type: Schema.Types.ObjectId, ref: "Category" }],
 });
 
-export const ProductModel = models.Product || model<ProductDoc>('Product', ProductSchema);
+export const ProductModel: Model<ProductDoc> =
+  (models.Product as Model<ProductDoc>) ||
+  model<ProductDoc>("Product", ProductSchema);

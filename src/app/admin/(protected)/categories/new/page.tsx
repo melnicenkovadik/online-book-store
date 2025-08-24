@@ -1,8 +1,7 @@
 "use client";
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import CategoryForm from '../_form/CategoryForm';
-import type { Category } from '@/types/catalog';
+import { useRouter } from "next/navigation";
+import type { Category } from "@/types/catalog";
+import CategoryForm from "../_form/CategoryForm";
 
 export default function AdminCategoryCreatePage() {
   const router = useRouter();

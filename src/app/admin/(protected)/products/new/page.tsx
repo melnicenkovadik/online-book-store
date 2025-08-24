@@ -1,8 +1,7 @@
 "use client";
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import ProductForm from '../_form/ProductForm';
-import type { Product } from '@/types/catalog';
+import { useRouter } from "next/navigation";
+import type { Product } from "@/types/catalog";
+import ProductForm from "../_form/ProductForm";
 
 export default function AdminProductCreatePage() {
   const router = useRouter();

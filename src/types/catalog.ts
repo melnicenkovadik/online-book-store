@@ -35,10 +35,3 @@ export type Product = {
   attributes: ProductAttributes;
   categoryIds: string[];
 };
-
-export type Paginated<T> = {
-  items: T[];
-  page: number;
-  perPage: number;
-  total: number;
-};

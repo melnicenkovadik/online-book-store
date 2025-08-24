@@ -1,5 +1,3 @@
-import type { Product } from '@/types/catalog';
-
 export type OrderItem = {
   productId: string;
   qty: number;
@@ -19,15 +17,15 @@ export type OrderCustomer = {
 };
 
 export type DeliveryInfo = {
-  carrier: 'nova' | 'ukr';
+  carrier: "nova" | "ukr";
   cityRef?: string;
   warehouseRef?: string;
   address?: string;
 };
 
 export type PaymentInfo = {
-  provider: 'fondy' | 'liqpay' | 'cod';
-  status: 'pending' | 'paid' | 'failed';
+  provider: "fondy" | "liqpay" | "cod";
+  status: "pending" | "paid" | "failed";
   txId?: string;
 };
 
@@ -46,6 +44,6 @@ export type Order = {
   totals: OrderTotals;
   payment: PaymentInfo;
   ttn?: string;
-  status: 'new' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+  status: "new" | "processing" | "shipped" | "completed" | "cancelled";
   createdAt: string;
 };

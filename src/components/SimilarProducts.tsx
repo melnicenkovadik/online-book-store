@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { CatalogService } from '@/services/catalog';
-import type { Product } from '@/types/catalog';
-import styles from './SimilarProducts.module.scss';
+import Image from "next/image";
+import React from "react";
+import { CatalogService } from "@/services/catalog";
+import type { Product } from "@/types/catalog";
+import styles from "./SimilarProducts.module.scss";
 
 interface SimilarProductsProps {
   /** Current product to exclude from similar items */
@@ -14,10 +15,10 @@ interface SimilarProductsProps {
   title?: string;
 }
 
-export default function SimilarProducts({ 
-  currentProduct, 
-  limit = 8, 
-  title = 'Схожі товари' 
+export default function SimilarProducts({
+  currentProduct,
+  limit = 8,
+  title = "Схожі товари",
 }: SimilarProductsProps) {
   const [similar, setSimilar] = React.useState<Product[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -25,21 +26,21 @@ export default function SimilarProducts({
   React.useEffect(() => {
     let active = true;
     setLoading(true);
-    
+
     (async () => {
       try {
         const categoryId = currentProduct.categoryIds?.[0];
-        if (!categoryId) { 
-          setSimilar([]); 
-          return; 
+        if (!categoryId) {
+          setSimilar([]);
+          return;
         }
-        
-        const res = await CatalogService.getProducts({ 
-          categoryId, 
-          perPage: limit, 
-          sort: 'newest' 
+
+        const res = await CatalogService.getProducts({
+          categoryId,
+          perPage: limit,
+          sort: "newest",
         });
-        
+
         if (active) {
           setSimilar(res.items.filter((p) => p.id !== currentProduct.id));
         }
@@ -49,8 +50,10 @@ export default function SimilarProducts({
         if (active) setLoading(false);
       }
     })();
-    
-    return () => { active = false; };
+
+    return () => {
+      active = false;
+    };
   }, [currentProduct.id, currentProduct.categoryIds, limit]);
 
   if (loading) {
@@ -71,19 +74,21 @@ export default function SimilarProducts({
       <h2 className={styles.title}>{title}</h2>
       <div className={styles.grid}>
         {similar.map((product) => (
-          <a 
-            key={product.id} 
-            href={`/product/${product.slug}`} 
+          <a
+            key={product.id}
+            href={`/product/${product.slug}`}
             className={styles.card}
           >
-            <img 
-              src={product.images?.[0] || '/noimg.png'} 
-              alt={product.title} 
+            <Image
+              src={product.images?.[0] || "/noimg.png"}
+              alt={product.title}
               className={styles.image}
+              width={320}
+              height={320}
             />
             <div className={styles.productTitle}>{product.title}</div>
             <div className={styles.price}>
-              {(product.salePrice ?? product.price)} ₴
+              {product.salePrice ?? product.price} ₴
             </div>
           </a>
         ))}

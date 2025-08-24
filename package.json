@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack -p 3000",
     "build": "next build --turbopack",
     "start": "next start -p 3000",
+    "lint:ts": "tsc --noEmit",
     "lint": "biome check",
     "format": "biome format --write",
     "check:env": "node scripts/check-env.js",

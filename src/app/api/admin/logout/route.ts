@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 export async function POST() {
   const res = NextResponse.json({ ok: true }, { status: 200 });
-  res.cookies.set('admin_session', '', {
+  res.cookies.set("admin_session", "", {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
-    path: '/',
+    sameSite: "lax",
+    path: "/",
     maxAge: 0,
   });
   return res;

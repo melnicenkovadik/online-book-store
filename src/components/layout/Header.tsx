@@ -1,10 +1,10 @@
 "use client";
 
-import Link from 'next/link';
-import React from 'react';
-import { Button } from '@/components/uikit';
-import { useCart } from '@/store/cart';
-import styles from './Header.module.scss';
+import Link from "next/link";
+import React from "react";
+import { Button } from "@/components/uikit";
+import { useCart } from "@/store/cart";
+import styles from "./Header.module.scss";
 
 export function Header() {
   const cart = useCart();
@@ -23,16 +23,22 @@ export function Header() {
         </div>
         <nav className={styles.nav} id="main-nav">
           <Link href="/catalog">
-            <Button variant="ghost" id="nav-catalog">Каталог</Button>
+            <Button variant="ghost" id="nav-catalog">
+              Каталог
+            </Button>
           </Link>
           <Link href="/cart">
             <Button variant="ghost" className={styles.cartBadge} id="nav-cart">
-              Кошик {mounted && count > 0 ? `(${count})` : ''}
-              {mounted && count > 0 ? <span className={styles.subtotal}>· {subtotal} ₴</span> : null}
+              Кошик {mounted && count > 0 ? `(${count})` : ""}
+              {mounted && count > 0 ? (
+                <span className={styles.subtotal}>· {subtotal} ₴</span>
+              ) : null}
             </Button>
           </Link>
           <Link href="/admin/dashboard">
-            <Button variant="ghost" id="nav-admin">Адмін</Button>
+            <Button variant="ghost" id="nav-admin">
+              Адмін
+            </Button>
           </Link>
         </nav>
       </div>

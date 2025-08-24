@@ -164,10 +164,14 @@
   gap: 12px;
 }
 @media (min-width: 640px) {
-  .similarGrid { grid-template-columns: repeat(3, 1fr); }
+  .similarGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 @media (min-width: 1024px) {
-  .similarGrid { grid-template-columns: repeat(4, 1fr); }
+  .similarGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .similarCard {
   border: 1px solid #e5e7eb;
@@ -191,7 +195,9 @@
   line-height: 1.3;
   min-height: 2.6em;
 }
-.similarPrice { font-weight: 600; }
+.similarPrice {
+  font-weight: 600;
+}
 
 /* Sticky buy bar on mobile */
 .stickyBar {
@@ -209,15 +215,19 @@
   backdrop-filter: saturate(180%) blur(8px);
 }
 @media (min-width: 1024px) {
-  .stickyBar { display: none; }
+  .stickyBar {
+    display: none;
+  }
 }
-.stickyPrice { font-size: 16px; }
+.stickyPrice {
+  font-size: 16px;
+}
 
 /* Lightbox */
 .lightboxBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0, 0, 0, 0.85);
   z-index: 50;
 }
 
@@ -241,7 +251,7 @@
 .lightboxImg {
   max-width: 98vw;
   max-height: 98vh;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   border-radius: 12px;
   background: #fff;
 }
@@ -275,8 +285,12 @@
   z-index: 52;
 }
 
-.navLeft { left: 16px; }
-.navRight { right: 16px; }
+.navLeft {
+  left: 16px;
+}
+.navRight {
+  right: 16px;
+}
 
 .navBtn:focus-visible,
 .closeBtn:focus-visible,
@@ -312,7 +326,7 @@
   height: 36px;
   border-radius: 8px;
   border: none;
-  background: rgba(17,24,39,0.8);
+  background: rgba(17, 24, 39, 0.8);
   color: #fff;
   display: grid;
   place-items: center;

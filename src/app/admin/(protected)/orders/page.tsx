@@ -1,11 +1,12 @@
 "use client";
-import React from 'react';
-import Link from 'next/link';
-import { useAdminOrdersList } from '@/services/admin';
+import Link from "next/link";
+import React from "react";
+import type { AdminOrderListItem } from "@/services/admin";
+import { useAdminOrdersList } from "@/services/admin";
 
 export default function AdminOrdersPage() {
-  const [q, setQ] = React.useState('');
-  const [status, setStatus] = React.useState('');
+  const [q, setQ] = React.useState("");
+  const [status, setStatus] = React.useState("");
   const [page, setPage] = React.useState(1);
   const perPage = 10;
   const { data, isLoading } = useAdminOrdersList({ q, status, page, perPage });
@@ -13,7 +14,7 @@ export default function AdminOrdersPage() {
   return (
     <div>
       <h1 style={{ marginTop: 0 }}>Замовлення</h1>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <input
           value={q}
           onChange={(e) => {
@@ -21,7 +22,12 @@ export default function AdminOrdersPage() {
             setQ(e.target.value);
           }}
           placeholder="Пошук за номером, ПІБ, телефоном"
-          style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb', width: 320 }}
+          style={{
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+            width: 320,
+          }}
         />
         <select
           value={status}
@@ -29,7 +35,11 @@ export default function AdminOrdersPage() {
             setPage(1);
             setStatus(e.target.value);
           }}
-          style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }}
+          style={{
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+          }}
         >
           <option value="">Усі статуси</option>
           <option value="new">Нове</option>
@@ -43,30 +53,131 @@ export default function AdminOrdersPage() {
       {isLoading && <div>Завантаження…</div>}
       {!isLoading && data && (
         <div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: '8px 4px' }}>№</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: '8px 4px' }}>Клієнт</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: '8px 4px' }}>Телефон</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: '8px 4px' }}>Сума</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: '8px 4px' }}>Статус</th>
-                <th style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb', padding: '8px 4px' }}>Створено</th>
-                <th style={{ borderBottom: '1px solid #e5e7eb' }}></th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px 4px",
+                  }}
+                >
+                  №
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px 4px",
+                  }}
+                >
+                  Клієнт
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px 4px",
+                  }}
+                >
+                  Телефон
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px 4px",
+                  }}
+                >
+                  Сума
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px 4px",
+                  }}
+                >
+                  Статус
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px 4px",
+                  }}
+                >
+                  Створено
+                </th>
+                <th style={{ borderBottom: "1px solid #e5e7eb" }}></th>
               </tr>
             </thead>
             <tbody>
-              {data.items.map((o: any) => (
+              {data.items.map((o: AdminOrderListItem) => (
                 <tr key={o.id}>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>#{o.number}</td>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>{o.customer.fullName}</td>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>{o.customer.phone}</td>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>{o.totals.grand.toFixed(2)} грн</td>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>{
-                    ({ new: 'Нове', processing: 'В обробці', shipped: 'Відправлено', completed: 'Завершено', cancelled: 'Скасовано' } as Record<string, string>)[o.status] || o.status
-                  }</td>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>{new Date(o.createdAt).toLocaleString()}</td>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>
+                  <td
+                    style={{
+                      padding: "8px 4px",
+                      borderBottom: "1px solid #f3f4f6",
+                    }}
+                  >
+                    #{o.number}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 4px",
+                      borderBottom: "1px solid #f3f4f6",
+                    }}
+                  >
+                    {o.customer.fullName}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 4px",
+                      borderBottom: "1px solid #f3f4f6",
+                    }}
+                  >
+                    {o.customer.phone}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 4px",
+                      borderBottom: "1px solid #f3f4f6",
+                    }}
+                  >
+                    {o.totals.grand.toFixed(2)} грн
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 4px",
+                      borderBottom: "1px solid #f3f4f6",
+                    }}
+                  >
+                    {(
+                      {
+                        new: "Нове",
+                        processing: "В обробці",
+                        shipped: "Відправлено",
+                        completed: "Завершено",
+                        cancelled: "Скасовано",
+                      } as Record<string, string>
+                    )[o.status] || o.status}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 4px",
+                      borderBottom: "1px solid #f3f4f6",
+                    }}
+                  >
+                    {new Date(o.createdAt).toLocaleString()}
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px 4px",
+                      borderBottom: "1px solid #f3f4f6",
+                    }}
+                  >
                     <Link href={`/admin/orders/${o.id}`}>Відкрити</Link>
                   </td>
                 </tr>
@@ -74,21 +185,41 @@ export default function AdminOrdersPage() {
             </tbody>
           </table>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginTop: 12,
+              alignItems: "center",
+            }}
+          >
             <button
+              type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              style={{ padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff' }}
+              style={{
+                padding: "6px 10px",
+                border: "1px solid #e5e7eb",
+                borderRadius: 6,
+                background: "#fff",
+              }}
             >
               Назад
             </button>
             <div>
-              Сторінка {data.page} з {Math.max(1, Math.ceil(data.total / data.perPage))}
+              Сторінка {data.page} з{" "}
+              {Math.max(1, Math.ceil(data.total / data.perPage))}
             </div>
             <button
+              type="button"
               onClick={() => setPage((p) => p + 1)}
               disabled={data.items.length < data.perPage}
-              style={{ padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff' }}
+              style={{
+                padding: "6px 10px",
+                border: "1px solid #e5e7eb",
+                borderRadius: 6,
+                background: "#fff",
+              }}
             >
               Далі
             </button>

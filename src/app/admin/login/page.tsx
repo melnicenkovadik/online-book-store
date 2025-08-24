@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React from "react";
 
 export default function AdminLoginPage() {
   const [password, setPassword] = React.useState("");
@@ -22,27 +22,80 @@ export default function AdminLoginPage() {
         return;
       }
       window.location.href = "/admin";
-    } catch (err: any) {
-      setError(err?.message || "Помилка мережі");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Помилка мережі");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
-      <form onSubmit={onSubmit} style={{ background: "white", padding: 24, borderRadius: 12, width: 360, boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
-        <h1 style={{ margin: 0, marginBottom: 16, fontSize: 20 }}>Вхід для адміністратора</h1>
-        <label style={{ display: "block", fontSize: 12, color: "#6b7280", marginBottom: 6 }}>Пароль</label>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#f9fafb",
+      }}
+    >
+      <form
+        onSubmit={onSubmit}
+        style={{
+          background: "white",
+          padding: 24,
+          borderRadius: 12,
+          width: 360,
+          boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+        }}
+      >
+        <h1 style={{ margin: 0, marginBottom: 16, fontSize: 20 }}>
+          Вхід для адміністратора
+        </h1>
+        <label
+          htmlFor="password"
+          style={{
+            display: "block",
+            fontSize: 12,
+            color: "#6b7280",
+            marginBottom: 6,
+          }}
+        >
+          Пароль
+        </label>
         <input
+          id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Введіть пароль адміністратора"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e5e7eb", outline: "none" }}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+            outline: "none",
+          }}
         />
-        {error && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 8 }}>{error}</div>}
-        <button type="submit" disabled={loading} style={{ width: "100%", marginTop: 16, padding: "10px 12px", borderRadius: 8, border: "none", background: "#111827", color: "white", cursor: "pointer" }}>
+        {error && (
+          <div style={{ color: "#ef4444", fontSize: 12, marginTop: 8 }}>
+            {error}
+          </div>
+        )}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%",
+            marginTop: 16,
+            padding: "10px 12px",
+            borderRadius: 8,
+            border: "none",
+            background: "#111827",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
           {loading ? "Вхід..." : "Увійти"}
         </button>
       </form>

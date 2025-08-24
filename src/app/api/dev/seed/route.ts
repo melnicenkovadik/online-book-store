@@ -1,14 +1,17 @@
-import { NextResponse } from 'next/server';
-import { connectToDB } from '@/lib/db';
-import { CategoryModel } from '@/lib/models/Category';
-import { ProductModel } from '@/lib/models/Product';
-import { categories as mockCategories, products as mockProducts } from '@/mocks/catalog';
+import { NextResponse } from "next/server";
+import { connectToDB } from "@/lib/db";
+import { CategoryModel } from "@/lib/models/Category";
+import { ProductModel } from "@/lib/models/Product";
+import {
+  categories as mockCategories,
+  products as mockProducts,
+} from "@/mocks/catalog";
 
 export async function POST(req: Request) {
   const token = process.env.SEED_TOKEN;
-  const auth = req.headers.get('authorization') || '';
+  const auth = req.headers.get("authorization") || "";
   if (!token || auth !== `Bearer ${token}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -20,10 +23,12 @@ export async function POST(req: Request) {
       const updated = await CategoryModel.findOneAndUpdate(
         { slug: c.slug },
         { $set: { name: c.name, slug: c.slug, parentId: null } },
-        { upsert: true, new: true }
-      ).lean();
-      if (updated && (updated as any)._id) {
-        catIdToMongoId.set(c.id, String((updated as any)._id));
+        { upsert: true, new: true },
+      )
+        .setOptions({ lean: true })
+        .exec();
+      if (updated && (updated as { _id?: unknown })._id) {
+        catIdToMongoId.set(c.id, String((updated as { _id: unknown })._id));
       }
     }
 
@@ -33,7 +38,10 @@ export async function POST(req: Request) {
         const _id = catIdToMongoId.get(c.id);
         const parentMongoId = catIdToMongoId.get(c.parentId);
         if (_id && parentMongoId) {
-          await CategoryModel.updateOne({ _id }, { $set: { parentId: parentMongoId } });
+          await CategoryModel.updateOne(
+            { _id },
+            { $set: { parentId: parentMongoId } },
+          );
         }
       }
     }
@@ -57,13 +65,25 @@ export async function POST(req: Request) {
         categoryIds,
       };
 
-      const res = await ProductModel.updateOne({ slug: p.slug }, { $set: update }, { upsert: true });
+      const res = await ProductModel.updateOne(
+        { slug: p.slug },
+        { $set: update },
+        { upsert: true },
+      );
       if (res.upsertedCount || res.modifiedCount) upserts++;
     }
 
-    return NextResponse.json({ ok: true, categories: mockCategories.length, products: mockProducts.length, upserts });
+    return NextResponse.json({
+      ok: true,
+      categories: mockCategories.length,
+      products: mockProducts.length,
+      upserts,
+    });
   } catch (err) {
-    console.error('[seed] error', err);
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    console.error("[seed] error", err);
+    return NextResponse.json(
+      { error: (err as Error).message },
+      { status: 500 },
+    );
   }
 }

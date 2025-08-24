@@ -1,8 +1,7 @@
-import mongoose, { Connection } from 'mongoose';
+import mongoose, { type Connection } from "mongoose";
 
 // Global cache to prevent creating multiple connections in dev/SSR
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let globalWithMongoose = global as any as {
+const globalWithMongoose = global as unknown as {
   _mongooseConn?: Connection | null;
   _mongoosePromise?: Promise<typeof mongoose> | null;
 };
@@ -21,11 +20,13 @@ export async function connectToDB() {
 
   if (!globalWithMongoose._mongoosePromise) {
     if (!MONGODB_URI) {
-      throw new Error('MONGODB_URI is not set');
+      throw new Error("MONGODB_URI is not set");
     }
 
     // Recommended mongoose options (Mongoose 8 has sensible defaults)
-    globalWithMongoose._mongoosePromise = mongoose.connect(MONGODB_URI).then((m) => m);
+    globalWithMongoose._mongoosePromise = mongoose
+      .connect(MONGODB_URI)
+      .then((m) => m);
   }
 
   const mongooseInstance = await globalWithMongoose._mongoosePromise;
