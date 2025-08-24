@@ -1,17 +1,4 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "env": {
-    "MONGODB_URI": "@mongodb_uri",
-    "ADMIN_PASSWORD": "@admin_password",
-    "SEED_TOKEN": "@seed_token",
-    "JWT_SECRET": "@jwt_secret",
-    "NEXT_PUBLIC_SITE_URL": "@site_url",
-    "CLOUDINARY_CLOUD_NAME": "@cloudinary_cloud_name",
-    "CLOUDINARY_API_KEY": "@cloudinary_api_key",
-    "CLOUDINARY_API_SECRET": "@cloudinary_api_secret"
-  }
+  "outputDirectory": ".next"
 }
