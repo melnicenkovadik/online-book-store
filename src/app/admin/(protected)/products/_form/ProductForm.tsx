@@ -4,6 +4,7 @@ import { AdminApi } from '@/services/admin';
 import * as Popover from '@radix-ui/react-popover';
 import { MagnifyingGlassIcon, CheckIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import type { Product, Category } from '@/types/catalog';
+import ImageUploadZone from '@/components/ImageUploadZone';
 
 export type ProductFormProps = {
   mode: 'create' | 'edit';
@@ -83,9 +84,23 @@ export default function ProductForm({ mode, initial, onSaved }: ProductFormProps
     }
   };
 
-  const setImagesFromText = (text: string) => {
-    const urls = text.split(/\n|,|\s/).map((s) => s.trim()).filter(Boolean);
-    setImages(urls);
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('images', file));
+    
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || `Помилка завантаження: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+    
+    const data = await response.json();
+    return data.urls;
   };
 
   const toggleCategory = (id: string) => {
@@ -177,8 +192,12 @@ export default function ProductForm({ mode, initial, onSaved }: ProductFormProps
       </div>
 
       <div>
-        <label style={label}>Зображення (URL-адреси, через кому/пробіл/з нового рядка)</label>
-        <textarea value={images.join('\n')} onChange={(e) => setImagesFromText(e.target.value)} rows={4} style={textarea} />
+        <label style={label}>Зображення</label>
+        <ImageUploadZone 
+          images={images} 
+          onImagesChange={setImages}
+          onUpload={uploadImages}
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
