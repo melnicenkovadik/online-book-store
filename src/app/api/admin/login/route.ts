@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
+import { getEnv } from "@/lib/env";
 
 export async function POST(req: Request) {
   try {
     const { password } = await req.json();
-    const expected = process.env.ADMIN_PASSWORD;
-    if (!expected) {
-      return NextResponse.json(
-        { error: "ADMIN_PASSWORD is not set" },
-        { status: 500 },
-      );
-    }
-    if (!password || password !== expected) {
+    const { ADMIN_PASSWORD } = getEnv();
+    
+    if (!password || password !== ADMIN_PASSWORD) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
     const res = NextResponse.json({ ok: true }, { status: 200 });

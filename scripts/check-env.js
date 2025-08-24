@@ -1,66 +1,31 @@
 #!/usr/bin/env node
 /*
-  Simple env checker. Fails with non-zero exit if required vars are missing.
+  Environment validator using Zod.
+  Fails with non-zero exit if required vars are missing or invalid.
 */
 
-const REQUIRED = [
-  "MONGODB_URI",
-  "JWT_SECRET",
-  "NEXT_PUBLIC_SITE_URL",
-  "ADMIN_PASSWORD",
-];
-
-const OPTIONAL = [
-  "NP_API_KEY",
-  "UKR_TOKEN",
-  "FONDY_MERCHANT_ID",
-  "FONDY_SECRET_KEY",
-  "FONDY_SANDBOX",
-  "LIQPAY_PUBLIC_KEY",
-  "LIQPAY_PRIVATE_KEY",
-  "LIQPAY_SANDBOX",
-  "NEXT_PUBLIC_GA_ID",
-  "NEXT_PUBLIC_META_PIXEL_ID",
-  "S3_ENDPOINT",
-  "S3_REGION",
-  "S3_BUCKET",
-  "S3_ACCESS_KEY_ID",
-  "S3_SECRET_ACCESS_KEY",
-  "S3_PUBLIC_BASE_URL",
-  "RATE_LIMIT_WINDOW_MS",
-  "RATE_LIMIT_MAX",
-];
+// This script uses CommonJS since it needs to run in Node directly
+// without TypeScript compilation
+const { execSync } = require('child_process');
+const path = require('path');
 
 function main() {
-  const missing = REQUIRED.filter(
-    (k) => !process.env[k] || String(process.env[k]).trim() === "",
-  );
-
-  // quick sanity checks
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const urlLooksOk =
-    /^https?:\/\//i.test(siteUrl) || siteUrl === "http://localhost:3000";
-
-  if (missing.length) {
-    console.error("[check-env] Missing required env vars:", missing.join(", "));
-  }
-  if (!urlLooksOk) {
-    console.error(
-      "[check-env] NEXT_PUBLIC_SITE_URL must start with http(s)://. Got:",
-      siteUrl,
+  try {
+    // Run the TypeScript validator using ts-node
+    const result = execSync(
+      'npx ts-node -e "import { validateEnv } from \'../src/lib/env\'; validateEnv();"',
+      {
+        cwd: path.resolve(__dirname),
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
     );
-  }
-
-  if (missing.length || !urlLooksOk) {
-    process.exit(1);
-  }
-
-  console.log("[check-env] OK");
-  // Print optional hints
-  const unsetOptional = OPTIONAL.filter((k) => !process.env[k]);
-  if (unsetOptional.length) {
-    console.log("[check-env] Optional vars not set:", unsetOptional.join(", "));
+    
+    console.log('[check-env] ✅ Environment validation successful');
+    return 0;
+  } catch (error) {
+    // The error output from the validation is already printed by the ts-node process
+    return 1;
   }
 }
 
-main();
+process.exit(main());

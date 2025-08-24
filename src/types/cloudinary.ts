@@ -13,7 +13,7 @@ export interface ImageUploadOptions {
   format?: string;
   quality?: string;
   fetch_format?: string;
-  transformation?: Array<Record<string, unknown>>;
+  transformation?: Record<string, unknown>[];
 }
 
 export interface ImageTransformationOptions {

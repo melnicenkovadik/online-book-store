@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 3000",
-    "build": "next build --turbopack",
+    "dev": "npm run check:env && next dev --turbopack -p 3000",
+    "build": "npm run check:env && next build --turbopack",
     "start": "next start -p 3000",
     "lint:ts": "tsc --noEmit",
     "lint": "biome check",
@@ -33,6 +33,7 @@
     "react-dropzone": "^14.3.8",
     "react-zoom-pan-pinch": "^3.7.0",
     "swr": "^2.3.6",
+    "zod": "^4.1.1",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
@@ -41,6 +42,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "sass": "^1.77.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

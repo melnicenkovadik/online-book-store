@@ -6,11 +6,12 @@ import {
   categories as mockCategories,
   products as mockProducts,
 } from "@/mocks/catalog";
+import { getEnv } from "@/lib/env";
 
 export async function POST(req: Request) {
-  const token = process.env.SEED_TOKEN;
+  const { SEED_TOKEN } = getEnv();
   const auth = req.headers.get("authorization") || "";
-  if (!token || auth !== `Bearer ${token}`) {
+  if (!SEED_TOKEN || auth !== `Bearer ${SEED_TOKEN}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

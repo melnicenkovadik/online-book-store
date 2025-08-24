@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     await connectToDB();
 
     // Base match for filters applied to category counts (includes priceMin/Max)
-    const baseAnd: Array<Record<string, unknown>> = [];
+    const baseAnd: Record<string, unknown>[] = [];
     if (q)
       baseAnd.push({
         title: {

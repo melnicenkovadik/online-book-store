@@ -38,7 +38,7 @@ export async function GET(req: Request) {
     await connectToDB();
 
     const match: Record<string, unknown> = {};
-    const andExpr: Array<Record<string, unknown>> = [];
+    const andExpr: Record<string, unknown>[] = [];
 
     if (q) {
       andExpr.push({
