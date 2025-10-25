@@ -6,7 +6,12 @@
 }
 .content {
   background: var(--background);
-  border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px; min-width: 200px;
+  border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px;
+  min-width: var(--radix-select-trigger-width, 200px);
+  max-height: 280px;
+  overflow: auto;
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-index-dropdown, 1000);
 }
 .item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; }
 .item[data-state='checked'] { background: rgba(0,0,0,0.06); }

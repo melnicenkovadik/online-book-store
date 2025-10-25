@@ -9,27 +9,61 @@ export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  await connectToDB();
-  const { id } = await ctx.params;
-  if (!mongoose.isValidObjectId(id))
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  const doc = (await ProductModel.findById(id).lean().exec()) as
-    | (ProductDoc & { _id: mongoose.Types.ObjectId })
-    | null;
-  if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const item: Product = {
-    id: String(doc._id),
-    title: doc.title,
-    slug: doc.slug,
-    sku: doc.sku,
-    price: doc.price,
-    salePrice: doc.salePrice ?? null,
-    stock: doc.stock,
-    images: doc.images || [],
-    attributes: doc.attributes || {},
-    categoryIds: (doc.categoryIds || []).map((cid) => String(cid)),
-  };
-  return NextResponse.json(item);
+  try {
+    await connectToDB();
+    const { id } = await ctx.params;
+    console.log("[GET /api/admin/products/:id] Fetching product:", id);
+
+    if (!mongoose.isValidObjectId(id)) {
+      console.log("[GET /api/admin/products/:id] Invalid ObjectId:", id);
+      return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    }
+
+    const doc = (await ProductModel.findById(id).lean().exec()) as
+      | (ProductDoc & { _id: mongoose.Types.ObjectId })
+      | null;
+
+    if (!doc) {
+      console.log("[GET /api/admin/products/:id] Product not found:", id);
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    console.log("[GET /api/admin/products/:id] Found product:", doc.title);
+    console.log(
+      "[GET /api/admin/products/:id] Raw attributes:",
+      JSON.stringify(doc.attributes, null, 2),
+    );
+
+    const item: Product = {
+      id: String(doc._id),
+      title: doc.title,
+      slug: doc.slug,
+      sku: doc.sku,
+      price: doc.price,
+      salePrice: doc.salePrice ?? null,
+      stock: doc.stock,
+      images: doc.images || [],
+      attributes: doc.attributes || {},
+      categoryIds: Array.isArray(doc.categoryIds)
+        ? doc.categoryIds.map((cid) => String(cid))
+        : [],
+    };
+
+    console.log(
+      "[GET /api/admin/products/:id] Sending attributes:",
+      JSON.stringify(item.attributes, null, 2),
+    );
+    return NextResponse.json(item);
+  } catch (error: unknown) {
+    console.error("[GET /api/admin/products/:id] Error:", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+        details: error instanceof Error ? error.stack : String(error),
+      },
+      { status: 500 },
+    );
+  }
 }
 
 export async function PUT(
@@ -92,7 +126,9 @@ export async function PUT(
       stock: doc.stock,
       images: doc.images || [],
       attributes: doc.attributes || {},
-      categoryIds: (doc.categoryIds || []).map((cid) => String(cid)),
+      categoryIds: Array.isArray(doc.categoryIds)
+        ? doc.categoryIds.map((cid) => String(cid))
+        : [],
     };
     return NextResponse.json(next);
   } catch (e: unknown) {
@@ -131,7 +167,9 @@ export async function DELETE(
     stock: removed.stock,
     images: removed.images || [],
     attributes: removed.attributes || {},
-    categoryIds: (removed.categoryIds || []).map((cid) => String(cid)),
+    categoryIds: Array.isArray(removed.categoryIds)
+      ? removed.categoryIds.map((cid) => String(cid))
+      : [],
   };
   return NextResponse.json({ ok: true, removed: payload });
 }

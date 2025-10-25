@@ -11,117 +11,145 @@ function parseBool(val: string | null) {
 }
 
 export async function GET(req: Request) {
-  await connectToDB();
-  const url = new URL(req.url);
-  const q = url.searchParams.get("q") || undefined;
-  const categoryId = url.searchParams.get("categoryId") || undefined;
-  const page = Math.max(1, Number(url.searchParams.get("page") || "1"));
-  const perPage = Math.max(1, Number(url.searchParams.get("perPage") || "20"));
-  const priceMin = url.searchParams.get("priceMin");
-  const priceMax = url.searchParams.get("priceMax");
-  const inStock = parseBool(url.searchParams.get("inStock"));
-  const onSale = parseBool(url.searchParams.get("onSale"));
-  const sort = (url.searchParams.get("sort") || "newest") as
-    | "price-asc"
-    | "price-desc"
-    | "title-asc"
-    | "title-desc"
-    | "newest";
+  try {
+    await connectToDB();
+    const url = new URL(req.url);
+    const q = url.searchParams.get("q") || undefined;
+    const categoryId = url.searchParams.get("categoryId") || undefined;
+    const page = Math.max(1, Number(url.searchParams.get("page") || "1"));
+    const perPage = Math.max(
+      1,
+      Number(url.searchParams.get("perPage") || "20"),
+    );
+    const priceMin = url.searchParams.get("priceMin");
+    const priceMax = url.searchParams.get("priceMax");
+    const inStock = parseBool(url.searchParams.get("inStock"));
+    const onSale = parseBool(url.searchParams.get("onSale"));
+    const sort = (url.searchParams.get("sort") || "newest") as
+      | "price-asc"
+      | "price-desc"
+      | "title-asc"
+      | "title-desc"
+      | "newest";
 
-  const match: Record<string, unknown> = {};
-  if (q) {
-    const rx = new RegExp(q, "i");
-    match.$or = [
-      { title: rx },
-      { "attributes.author": rx },
-      { "attributes.publisher": rx },
-    ];
-  }
-  if (categoryId && mongoose.isValidObjectId(categoryId)) {
-    match.categoryIds = new mongoose.Types.ObjectId(categoryId);
-  }
-  if (inStock) match.stock = { $gt: 0 };
-  if (onSale)
-    match.$expr = {
-      $and: [{ $ne: ["$salePrice", null] }, { $lt: ["$salePrice", "$price"] }],
-    };
-
-  const pipeline: PipelineStage[] = [
-    { $match: match },
-    { $addFields: { effectivePrice: { $ifNull: ["$salePrice", "$price"] } } },
-  ];
-  if (priceMin != null)
-    pipeline.push({ $match: { effectivePrice: { $gte: Number(priceMin) } } });
-  if (priceMax != null)
-    pipeline.push({ $match: { effectivePrice: { $lte: Number(priceMax) } } });
-
-  const sortStage: Record<string, 1 | -1> = {};
-  switch (sort) {
-    case "price-asc":
-      sortStage.effectivePrice = 1;
-      break;
-    case "price-desc":
-      sortStage.effectivePrice = -1;
-      break;
-    case "title-asc":
-      sortStage.title = 1;
-      break;
-    case "title-desc":
-      sortStage.title = -1;
-      break;
-    default:
-      sortStage._id = -1;
-      break;
-  }
-
-  pipeline.push(
-    { $sort: sortStage },
-    {
-      $facet: {
-        items: [
-          { $skip: (page - 1) * perPage },
-          { $limit: perPage },
-          {
-            $project: {
-              _id: 1,
-              title: 1,
-              slug: 1,
-              sku: 1,
-              price: 1,
-              salePrice: 1,
-              stock: 1,
-              images: 1,
-              attributes: 1,
-              categoryIds: 1,
-            },
-          },
+    const match: Record<string, unknown> = {};
+    if (q) {
+      const rx = new RegExp(q, "i");
+      match.$or = [
+        { title: rx },
+        { "attributes.author": rx },
+        { "attributes.publisher": rx },
+      ];
+    }
+    if (categoryId && mongoose.isValidObjectId(categoryId)) {
+      match.categoryIds = new mongoose.Types.ObjectId(categoryId);
+    }
+    if (inStock) match.stock = { $gt: 0 };
+    if (onSale)
+      match.$expr = {
+        $and: [
+          { $ne: ["$salePrice", null] },
+          { $lt: ["$salePrice", "$price"] },
         ],
-        total: [{ $count: "count" }],
+      };
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $addFields: { effectivePrice: { $ifNull: ["$salePrice", "$price"] } } },
+    ];
+    if (priceMin != null)
+      pipeline.push({ $match: { effectivePrice: { $gte: Number(priceMin) } } });
+    if (priceMax != null)
+      pipeline.push({ $match: { effectivePrice: { $lte: Number(priceMax) } } });
+
+    const sortStage: Record<string, 1 | -1> = {};
+    switch (sort) {
+      case "price-asc":
+        sortStage.effectivePrice = 1;
+        break;
+      case "price-desc":
+        sortStage.effectivePrice = -1;
+        break;
+      case "title-asc":
+        sortStage.title = 1;
+        break;
+      case "title-desc":
+        sortStage.title = -1;
+        break;
+      default:
+        sortStage._id = -1;
+        break;
+    }
+
+    pipeline.push(
+      { $sort: sortStage },
+      {
+        $facet: {
+          items: [
+            { $skip: (page - 1) * perPage },
+            { $limit: perPage },
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                slug: 1,
+                sku: 1,
+                price: 1,
+                salePrice: 1,
+                stock: 1,
+                images: 1,
+                attributes: 1,
+                categoryIds: 1,
+              },
+            },
+          ],
+          total: [{ $count: "count" }],
+        },
       },
-    },
-  );
+    );
 
-  const agg = await ProductModel.aggregate(pipeline);
-  const first = agg[0] || { items: [], total: [] };
-  const total = first.total[0]?.count || 0;
-  const items = first.items.map(
-    (
-      d: Record<string, unknown> & { _id: unknown; categoryIds?: unknown[] },
-    ) => ({
-      id: String(d._id),
-      title: d.title,
-      slug: d.slug,
-      sku: d.sku,
-      price: d.price,
-      salePrice: d.salePrice ?? null,
-      stock: d.stock,
-      images: d.images || [],
-      attributes: d.attributes || {},
-      categoryIds: (d.categoryIds || []).map((cid) => String(cid)),
-    }),
-  );
+    const agg = await ProductModel.aggregate(pipeline);
+    const first = agg[0] || { items: [], total: [] };
+    const total = first.total[0]?.count || 0;
+    const items = first.items.map(
+      (
+        d: Record<string, unknown> & { _id: unknown; categoryIds?: unknown },
+      ) => {
+        // Ensure categoryIds is always an array
+        let categoryIds: string[] = [];
+        if (Array.isArray(d.categoryIds)) {
+          categoryIds = d.categoryIds.map((cid) => String(cid));
+        } else if (d.categoryIds != null) {
+          // If it's a single value, wrap it in an array
+          categoryIds = [String(d.categoryIds)];
+        }
 
-  return NextResponse.json({ items, page, perPage, total });
+        return {
+          id: String(d._id),
+          title: d.title,
+          slug: d.slug,
+          sku: d.sku,
+          price: d.price,
+          salePrice: d.salePrice ?? null,
+          stock: d.stock,
+          images: Array.isArray(d.images) ? d.images : [],
+          attributes: d.attributes || {},
+          categoryIds,
+        };
+      },
+    );
+
+    return NextResponse.json({ items, page, perPage, total });
+  } catch (error: unknown) {
+    console.error("[GET /api/admin/products] Error:", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+        details: error instanceof Error ? error.stack : String(error),
+      },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(req: Request) {

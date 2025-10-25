@@ -1,0 +1,211 @@
+// Responsive breakpoints
+$breakpoints: (
+  'xs': 320px,
+  'sm': 640px,
+  'md': 768px,
+  'lg': 1024px,
+  'xl': 1280px,
+  '2xl': 1536px,
+);
+
+// Media query mixin
+@mixin respond-to($breakpoint) {
+  @if map-has-key($breakpoints, $breakpoint) {
+    @media (min-width: map-get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  } @else {
+    @warn "Invalid breakpoint: #{$breakpoint}. Available breakpoints: #{map-keys($breakpoints)}";
+  }
+}
+
+// Flexbox utilities
+@mixin flex($direction: row, $justify: flex-start, $align: stretch, $wrap: nowrap) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+  flex-wrap: $wrap;
+}
+
+// Grid utilities
+@mixin grid($columns: 1, $gap: var(--spacing-4)) {
+  display: grid;
+  grid-template-columns: repeat($columns, 1fr);
+  gap: $gap;
+}
+
+// Responsive grid with different column counts
+@mixin responsive-grid($sm: 1, $md: 2, $lg: 3, $xl: 4, $gap: var(--spacing-4)) {
+  display: grid;
+  grid-template-columns: repeat($sm, 1fr);
+  gap: $gap;
+  
+  @include respond-to('sm') {
+    grid-template-columns: repeat($sm, 1fr);
+  }
+  
+  @include respond-to('md') {
+    grid-template-columns: repeat($md, 1fr);
+  }
+  
+  @include respond-to('lg') {
+    grid-template-columns: repeat($lg, 1fr);
+  }
+  
+  @include respond-to('xl') {
+    grid-template-columns: repeat($xl, 1fr);
+  }
+}
+
+// Typography
+@mixin heading($size: 'lg', $weight: 600, $margin-bottom: var(--spacing-4)) {
+  font-weight: $weight;
+  margin-bottom: $margin-bottom;
+  line-height: 1.25;
+  
+  @if $size == 'xs' {
+    font-size: var(--font-size-lg);
+  } @else if $size == 'sm' {
+    font-size: var(--font-size-xl);
+  } @else if $size == 'md' {
+    font-size: var(--font-size-2xl);
+  } @else if $size == 'lg' {
+    font-size: var(--font-size-3xl);
+  } @else if $size == 'xl' {
+    font-size: var(--font-size-4xl);
+  }
+}
+
+// Truncate text with ellipsis
+@mixin truncate($lines: 1) {
+  @if $lines == 1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// Visually hide element (for accessibility)
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// Aspect ratio container
+@mixin aspect-ratio($width: 16, $height: 9) {
+  position: relative;
+  
+  &::before {
+    content: '';
+    display: block;
+    padding-top: ($height / $width) * 100%;
+  }
+  
+  > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// Container with max-width and centered
+@mixin container($max-width: var(--container-xl), $padding: var(--spacing-4)) {
+  width: 100%;
+  max-width: $max-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $padding;
+  padding-right: $padding;
+}
+
+// Card styles
+@mixin card($padding: var(--spacing-4), $radius: var(--border-radius-lg)) {
+  background-color: var(--color-background);
+  border-radius: $radius;
+  padding: $padding;
+  box-shadow: var(--shadow);
+}
+
+// Button styles
+@mixin button($variant: 'primary') {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  
+  @if $variant == 'primary' {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    
+    &:hover {
+      background-color: var(--color-primary-dark);
+    }
+    
+    &:disabled {
+      background-color: var(--color-text-lightest);
+      cursor: not-allowed;
+    }
+  } @else if $variant == 'secondary' {
+    background-color: var(--color-secondary);
+    color: white;
+    border: none;
+    
+    &:hover {
+      background-color: var(--color-secondary-dark);
+    }
+    
+    &:disabled {
+      background-color: var(--color-text-lightest);
+      cursor: not-allowed;
+    }
+  } @else if $variant == 'outline' {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    
+    &:hover {
+      background-color: var(--color-primary);
+      color: white;
+    }
+    
+    &:disabled {
+      color: var(--color-text-lightest);
+      border-color: var(--color-text-lightest);
+      cursor: not-allowed;
+    }
+  } @else if $variant == 'ghost' {
+    background-color: transparent;
+    color: var(--color-text);
+    border: none;
+    
+    &:hover {
+      background-color: var(--color-background-dark);
+    }
+    
+    &:disabled {
+      color: var(--color-text-lightest);
+      cursor: not-allowed;
+    }
+  }
+}

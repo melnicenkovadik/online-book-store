@@ -1,106 +1,85 @@
-import type mongoose from "mongoose";
-import { model, models, Schema } from "mongoose";
+import { type Model, model, models, Schema } from "mongoose";
+import type { OrderDoc } from "@/types/database";
 
-export type OrderItemDoc = {
-  productId: mongoose.Types.ObjectId;
-  qty: number;
-  // Snapshot of product data at the time of purchase
-  title: string;
-  sku?: string;
-  image?: string;
-  basePrice: number; // original price at the time of purchase
-  salePrice?: number | null; // sale price at the time of purchase
-  price: number; // final unit price used to compute totals (salePrice ?? basePrice)
-};
-
-export type OrderDoc = {
-  _id: mongoose.Types.ObjectId;
-  number: string;
-  items: OrderItemDoc[];
-  customer: {
-    fullName: string;
-    phone: string;
-    email?: string;
-  };
-  delivery: {
-    carrier: "nova" | "ukr";
-    cityRef?: string;
-    warehouseRef?: string;
-    address?: string;
-  };
-  totals: {
-    items: number;
-    shipping: number;
-    grand: number;
-  };
-  payment: {
-    provider: "fondy" | "liqpay" | "cod";
-    status: "pending" | "paid" | "failed";
-    txId?: string;
-  };
-  ttn?: string;
-  status: "new" | "processing" | "shipped" | "completed" | "cancelled";
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-const OrderItemSchema = new Schema<OrderItemDoc>({
-  productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
-  qty: { type: Number, required: true, min: 1 },
+const OrderItemSchema = new Schema({
+  productId: {
+    type: Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
+    index: true, // Index for product lookup in orders
+  },
   title: { type: String, required: true },
-  sku: { type: String },
+  price: { type: Number, required: true },
+  quantity: { type: Number, required: true, min: 1 },
   image: { type: String },
-  basePrice: { type: Number, required: true, min: 0 },
-  salePrice: { type: Number },
-  price: { type: Number, required: true, min: 0 },
 });
 
 const OrderSchema = new Schema<OrderDoc>(
   {
-    number: { type: String, required: true, unique: true, index: true },
-    items: { type: [OrderItemSchema], required: true },
-    customer: {
-      fullName: { type: String, required: true },
-      phone: { type: String, required: true },
-      email: { type: String },
+    number: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true, // Index for order number lookups
     },
-    delivery: {
-      carrier: { type: String, enum: ["nova", "ukr"], required: true },
-      cityRef: { type: String },
-      warehouseRef: { type: String },
-      address: { type: String },
-    },
-    totals: {
-      items: { type: Number, required: true },
-      shipping: { type: Number, required: true },
-      grand: { type: Number, required: true },
-    },
-    payment: {
-      provider: {
-        type: String,
-        enum: ["fondy", "liqpay", "cod"],
-        required: true,
-      },
-      status: {
-        type: String,
-        enum: ["pending", "paid", "failed"],
-        required: true,
-      },
-      txId: { type: String },
-    },
-    ttn: { type: String },
     status: {
       type: String,
-      enum: ["new", "processing", "shipped", "completed", "cancelled"],
-      default: "new",
-      index: true,
+      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      default: "pending",
+      index: true, // Index for status filtering
     },
+    customer: {
+      name: { type: String, required: true },
+      email: {
+        type: String,
+        required: true,
+        index: true, // Index for customer email lookups
+      },
+      phone: { type: String, required: true },
+    },
+    shipping: {
+      address: { type: String },
+      city: { type: String },
+      postalCode: { type: String },
+      country: { type: String, default: "Ukraine" },
+    },
+    payment: {
+      method: { type: String, default: "cod" }, // Cash on delivery
+      transactionId: { type: String },
+      status: { type: String, default: "pending" },
+    },
+    items: [OrderItemSchema],
+    subtotal: { type: Number, required: true },
+    tax: { type: Number, default: 0 },
+    shipping_fee: { type: Number, default: 0 },
+    total: { type: Number, required: true },
+    notes: { type: String },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      index: true, // Index for date-based queries
+    },
+    updatedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    // Create compound indexes for common query patterns
+    indexes: [
+      // Compound index for customer + date (for customer order history)
+      { "customer.email": 1, createdAt: -1 },
+      // Compound index for status + date (for order management)
+      { status: 1, createdAt: -1 },
+      // Index for total amount (for financial reports)
+      { total: 1 },
+    ],
+  },
 );
 
-OrderSchema.index({ createdAt: -1 });
-OrderSchema.index({ "customer.email": 1 });
-OrderSchema.index({ "customer.phone": 1 });
+// Pre-save hook to update timestamps
+OrderSchema.pre("save", function (next) {
+  this.updatedAt = new Date();
+  next();
+});
 
-export const OrderModel = models.Order || model<OrderDoc>("Order", OrderSchema);
+export const OrderModel: Model<OrderDoc> =
+  (models.Order as Model<OrderDoc>) || model<OrderDoc>("Order", OrderSchema);

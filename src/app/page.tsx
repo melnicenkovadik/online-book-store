@@ -1,107 +1,144 @@
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/uikit";
+import { connectToDB } from "@/lib/db";
+import { ProductModel } from "@/lib/models/Product";
 import styles from "./page.module.css";
 
-export default function Home() {
-  return (
-    <div className={styles.page} id="home-page">
-      <main className={styles.main} id="home-main">
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-          id="home-logo"
-        />
-        <ol id="home-instructions">
-          <li id="home-instruction-edit">
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li id="home-instruction-save">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+export const metadata: Metadata = {
+  title: "Онлайн-магазин книг - Головна сторінка",
+  description:
+    "Ласкаво просимо до нашого онлайн-магазину книг. Широкий вибір книг для всіх вікових категорій.",
+};
 
-        <div className={styles.ctas} id="home-ctas">
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            id="home-cta-deploy"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-              id="home-cta-deploy-logo"
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-            id="home-cta-docs"
-          >
-            Read our docs
-          </a>
+// Revalidate this page every 12 hours
+export const revalidate = 43200;
+
+async function getFeaturedProducts() {
+  try {
+    await connectToDB();
+    // Fetch a few featured products (with sale price or newest)
+    const products = await ProductModel.find({
+      $or: [{ salePrice: { $ne: null } }, { stock: { $gt: 0 } }],
+    })
+      .sort({ _id: -1 }) // newest first
+      .limit(4)
+      .exec();
+
+    return products.map((p) => ({
+      id: p._id.toString(),
+      title: p.title,
+      slug: p.slug,
+      price: p.price,
+      salePrice: p.salePrice,
+      images: p.images || [],
+    }));
+  } catch (error) {
+    console.error("Failed to fetch featured products:", error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const featuredProducts = await getFeaturedProducts();
+
+  return (
+    <main className={styles.main}>
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <h1 className={styles.title}>
+            Знайдіть свою наступну улюблену книгу
+          </h1>
+          <p className={styles.description}>
+            Широкий вибір книг різних жанрів та авторів для всіх вікових
+            категорій
+          </p>
+          <div className={styles.actions}>
+            <Link href="/catalog" passHref>
+              <Button variant="primary" size="large">
+                Перейти до каталогу
+              </Button>
+            </Link>
+          </div>
         </div>
-      </main>
-      <footer className={styles.footer} id="home-footer">
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-          id="home-footer-learn"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-            id="home-footer-learn-icon"
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-          id="home-footer-examples"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-            id="home-footer-examples-icon"
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-          id="home-footer-next"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-            id="home-footer-next-icon"
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      <section className={styles.featured}>
+        <h2 className={styles.sectionTitle}>Рекомендовані книги</h2>
+        <div className={styles.featuredGrid}>
+          {featuredProducts.map((product) => (
+            <Link
+              href={`/product/${product.slug}`}
+              key={product.id}
+              className={styles.productCard}
+            >
+              <div className={styles.productImage}>
+                {product.images[0] ? (
+                  <Image
+                    src={product.images[0]}
+                    alt={product.title}
+                    width={200}
+                    height={300}
+                    style={{ objectFit: "contain" }}
+                    sizes="(max-width: 768px) 100vw, 200px"
+                  />
+                ) : (
+                  <div className={styles.noImage}>Немає зображення</div>
+                )}
+              </div>
+              <h3 className={styles.productTitle}>{product.title}</h3>
+              <div className={styles.productPrice}>
+                {product.salePrice ? (
+                  <>
+                    <span className={styles.salePrice}>
+                      {product.salePrice} ₴
+                    </span>
+                    <span className={styles.oldPrice}>{product.price} ₴</span>
+                  </>
+                ) : (
+                  <span>{product.price} ₴</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+        <div className={styles.viewAll}>
+          <Link href="/catalog" passHref>
+            <Button variant="outline">Переглянути всі книги</Button>
+          </Link>
+        </div>
+      </section>
+
+      <section className={styles.categories}>
+        <h2 className={styles.sectionTitle}>Популярні категорії</h2>
+        <div className={styles.categoryGrid}>
+          <Link
+            href="/catalog?categoryId=fiction"
+            className={styles.categoryCard}
+          >
+            <h3>Художня література</h3>
+          </Link>
+          <Link
+            href="/catalog?categoryId=nonfiction"
+            className={styles.categoryCard}
+          >
+            <h3>Нехудожня література</h3>
+          </Link>
+          <Link
+            href="/catalog?categoryId=children"
+            className={styles.categoryCard}
+          >
+            <h3>Дитяча література</h3>
+          </Link>
+          <Link
+            href="/catalog?categoryId=education"
+            className={styles.categoryCard}
+          >
+            <h3>Навчальна література</h3>
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }

@@ -8,6 +8,8 @@ const isVercelBuild =
 export const envSchema = z.object({
   // Database
   MONGODB_URI: z.string().url("MONGODB_URI must be a valid URL"),
+  // Admin auth
+  ADMIN_USERNAME: z.string().default("admin"),
   ADMIN_PASSWORD: z.string().min(1, "ADMIN_PASSWORD cannot be empty"),
   SEED_TOKEN: z.string().min(1, "SEED_TOKEN cannot be empty"),
 

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
+import Header from "@/components/layout/Header";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,13 +28,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <Header />
-        <main>
-          <div style={{ maxWidth: 1180, margin: "0 auto", padding: "16px" }}>
-            {children}
-          </div>
-        </main>
-        <Footer />
+        <QueryProvider>
+          <Header />
+          <main>
+            <div style={{ maxWidth: 1180, margin: "0 auto", padding: "16px" }}>
+              {children}
+            </div>
+          </main>
+          <Footer />
+        </QueryProvider>
       </body>
     </html>
   );

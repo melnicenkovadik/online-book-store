@@ -45,6 +45,8 @@ export default function OrderDetailPage({
 
   if (isLoading || !order) return <div>Завантаження…</div>;
 
+  const sanitizeSrc = (s: string) => s?.trim();
+
   return (
     <div>
       <h1 style={{ marginTop: 0 }}>Замовлення №{order.number}</h1>
@@ -149,7 +151,9 @@ export default function OrderDetailPage({
                         >
                           {(it.image || p?.images?.[0]) && (
                             <Image
-                              src={(it.image || p?.images?.[0]) as string}
+                              src={sanitizeSrc(
+                                (it.image || p?.images?.[0]) as string,
+                              )}
                               alt={(it.title || p?.title) as string}
                               width={40}
                               height={40}

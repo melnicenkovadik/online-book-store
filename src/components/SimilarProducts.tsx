@@ -1,98 +1,112 @@
 "use client";
 
-import Image from "next/image";
-import React from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { CatalogService } from "@/services/catalog";
 import type { Product } from "@/types/catalog";
+import OptimizedImage from "./OptimizedImage";
 import styles from "./SimilarProducts.module.scss";
 
 interface SimilarProductsProps {
-  /** Current product to exclude from similar items */
   currentProduct: Product;
-  /** Number of similar products to show */
-  limit?: number;
-  /** Custom title */
-  title?: string;
 }
 
 export default function SimilarProducts({
   currentProduct,
-  limit = 8,
-  title = "Схожі товари",
 }: SimilarProductsProps) {
-  const [similar, setSimilar] = React.useState<Product[]>([]);
-  const [loading, setLoading] = React.useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let active = true;
-    setLoading(true);
 
-    (async () => {
+    const fetchSimilarProducts = async () => {
       try {
+        setLoading(true);
+
+        // Get products from the same category
         const categoryId = currentProduct.categoryIds?.[0];
         if (!categoryId) {
-          setSimilar([]);
+          setProducts([]);
           return;
         }
 
-        const res = await CatalogService.getProducts({
+        const result = await CatalogService.getProducts({
           categoryId,
-          perPage: limit,
-          sort: "newest",
+          perPage: 4,
         });
 
-        if (active) {
-          setSimilar(res.items.filter((p) => p.id !== currentProduct.id));
-        }
-      } catch {
-        if (active) setSimilar([]);
+        if (!active) return;
+
+        // Filter out the current product
+        const similarProducts = result.items.filter(
+          (p) => p.id !== currentProduct.id,
+        );
+
+        setProducts(similarProducts);
+      } catch (error) {
+        console.error("Error fetching similar products:", error);
+        if (active) setProducts([]);
       } finally {
         if (active) setLoading(false);
       }
-    })();
+    };
+
+    fetchSimilarProducts();
 
     return () => {
       active = false;
     };
-  }, [currentProduct.id, currentProduct.categoryIds, limit]);
+  }, [currentProduct.id, currentProduct.categoryIds]);
 
   if (loading) {
     return (
-      <section className={styles.section}>
-        <h2 className={styles.title}>{title}</h2>
+      <div className={styles.container}>
+        <h2 className={styles.title}>Схожі товари</h2>
         <div className={styles.loading}>Завантаження...</div>
-      </section>
+      </div>
     );
   }
 
-  if (!similar.length) {
+  if (products.length === 0) {
     return null;
   }
 
   return (
-    <section className={styles.section}>
-      <h2 className={styles.title}>{title}</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Схожі товари</h2>
       <div className={styles.grid}>
-        {similar.map((product) => (
-          <a
-            key={product.id}
+        {products.map((product) => (
+          <Link
             href={`/product/${product.slug}`}
+            key={product.id}
             className={styles.card}
           >
-            <Image
-              src={product.images?.[0] || "/noimg.png"}
-              alt={product.title}
-              className={styles.image}
-              width={320}
-              height={320}
-            />
-            <div className={styles.productTitle}>{product.title}</div>
-            <div className={styles.price}>
-              {product.salePrice ?? product.price} ₴
+            <div className={styles.imageContainer}>
+              {product.images?.[0] ? (
+                <OptimizedImage
+                  src={product.images[0]}
+                  alt={product.title}
+                  width={150}
+                  height={200}
+                  sizes="150px"
+                  style={{ objectFit: "contain" }}
+                  loadingComponent={<div className={styles.imagePlaceholder} />}
+                />
+              ) : (
+                <div className={styles.noImage}>Немає зображення</div>
+              )}
             </div>
-          </a>
+            <h3 className={styles.productTitle}>{product.title}</h3>
+            <div className={styles.priceRow}>
+              <strong>{product.salePrice ?? product.price} ₴</strong>
+              {product.salePrice && (
+                <s className={styles.oldPrice}>{product.price} ₴</s>
+              )}
+            </div>
+          </Link>
         ))}
       </div>
-    </section>
+    </div>
   );
 }

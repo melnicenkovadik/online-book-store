@@ -1,3 +1,4 @@
+import { cache, createCacheKey } from "@/lib/cache";
 import type { Category, Product } from "@/types/catalog";
 import type { Paginated } from "@/types/http";
 import { apiFetch } from "./http";
@@ -20,9 +21,24 @@ export type FacetsResponse = {
 };
 
 export const CatalogService = {
+  /**
+   * Get all categories with caching
+   * @returns List of categories
+   */
   async getCategories(): Promise<Category[]> {
-    return apiFetch<Category[]>({ path: "/api/catalog/categories" });
+    // Cache categories for 1 hour
+    return cache.getOrSet<Category[]>(
+      "catalog:categories",
+      () => apiFetch<Category[]>({ path: "/api/catalog/categories" }),
+      3600, // 1 hour TTL
+    );
   },
+
+  /**
+   * Get products with filtering, pagination and caching
+   * @param params Query parameters
+   * @returns Paginated products
+   */
   async getProducts(params: ProductsQuery = {}): Promise<Paginated<Product>> {
     const usp = new URLSearchParams();
     if (params.q) usp.set("q", params.q);
@@ -38,9 +54,28 @@ export const CatalogService = {
       usp.set("inStock", String(params.inStock));
     if (typeof params.onSale === "boolean")
       usp.set("onSale", String(params.onSale));
+
     const path = `/api/catalog/products${usp.toString() ? `?${usp.toString()}` : ""}`;
-    return apiFetch<Paginated<Product>>({ path });
+
+    // Cache product listings for 5 minutes
+    // Skip cache for search queries (params.q) as they're less likely to be reused
+    if (params.q) {
+      return apiFetch<Paginated<Product>>({ path });
+    }
+
+    const cacheKey = createCacheKey("catalog:products", params);
+    return cache.getOrSet<Paginated<Product>>(
+      cacheKey,
+      () => apiFetch<Paginated<Product>>({ path }),
+      300, // 5 minutes TTL
+    );
   },
+
+  /**
+   * Get category facets with caching
+   * @param params Query parameters
+   * @returns Facets response
+   */
   async getCategoryFacets(
     params: Omit<ProductsQuery, "page" | "perPage"> = {},
   ): Promise<FacetsResponse> {
@@ -56,12 +91,37 @@ export const CatalogService = {
       usp.set("inStock", String(params.inStock));
     if (typeof params.onSale === "boolean")
       usp.set("onSale", String(params.onSale));
+
     const path = `/api/catalog/facets${usp.toString() ? `?${usp.toString()}` : ""}`;
-    return apiFetch<FacetsResponse>({ path });
+
+    // Skip cache for search queries (params.q)
+    if (params.q) {
+      return apiFetch<FacetsResponse>({ path });
+    }
+
+    // Cache facets for 10 minutes
+    const cacheKey = createCacheKey("catalog:facets", params);
+    return cache.getOrSet<FacetsResponse>(
+      cacheKey,
+      () => apiFetch<FacetsResponse>({ path }),
+      600, // 10 minutes TTL
+    );
   },
+
+  /**
+   * Get product by slug with caching
+   * @param slug Product slug
+   * @returns Product details
+   */
   async getProductBySlug(slug: string): Promise<Product> {
-    return apiFetch<Product>({
-      path: `/api/catalog/products/${encodeURIComponent(slug)}`,
-    });
+    // Cache individual products for 10 minutes
+    return cache.getOrSet<Product>(
+      `catalog:product:${slug}`,
+      () =>
+        apiFetch<Product>({
+          path: `/api/catalog/products/${encodeURIComponent(slug)}`,
+        }),
+      600, // 10 minutes TTL
+    );
   },
 };

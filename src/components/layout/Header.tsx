@@ -1,47 +1,191 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import React from "react";
-import { Button } from "@/components/uikit";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+} from "@/components/uikit";
+import { CatalogService } from "@/services/catalog";
 import { useCart } from "@/store/cart";
+import type { Category } from "@/types/catalog";
 import styles from "./Header.module.scss";
 
-export function Header() {
+export default function Header() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
   const cart = useCart();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
-  const count = mounted ? cart.count() : 0;
-  const subtotal = mounted ? cart.subtotal() : 0;
+
+  // Fetch categories
+  useEffect(() => {
+    CatalogService.getCategories()
+      .then(setCategories)
+      .catch((err) => console.error("Failed to load categories:", err));
+  }, []);
+
+  // Track scroll position for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close mobile menu when navigating
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  // Calculate cart items count
+  const cartItemsCount = Object.values(cart.items).reduce(
+    (sum, item) => sum + item.qty,
+    0,
+  );
 
   return (
-    <header className={styles.header} id="app-header">
-      <div className={styles.inner}>
-        <div>
-          <Link href="/" className={styles.brand} id="nav-brand">
-            <strong>Магазин підручників</strong>
-          </Link>
+    <header className={`${styles.header} ${isScrolled ? styles.sticky : ""}`}>
+      <div className={styles.topBar}>
+        <div className={styles.container}>
+          <div className={styles.contact}>
+            <a href="tel:+380123456789" className={styles.contactLink}>
+              <span className={styles.contactIcon}>📞</span>
+              <span className={styles.contactText}>+38 (012) 345-67-89</span>
+            </a>
+            <a href="mailto:info@bookstore.com" className={styles.contactLink}>
+              <span className={styles.contactIcon}>✉️</span>
+              <span className={styles.contactText}>info@bookstore.com</span>
+            </a>
+          </div>
+          <div className={styles.actions}>
+            <button type="button" className={styles.actionLink}>
+              Доставка і оплата
+            </button>
+            <button type="button" className={styles.actionLink}>
+              Про нас
+            </button>
+            <button type="button" className={styles.actionLink}>
+              Контакти
+            </button>
+          </div>
         </div>
-        <nav className={styles.nav} id="main-nav">
-          <Link href="/catalog">
-            <Button variant="ghost" id="nav-catalog">
-              Каталог
-            </Button>
-          </Link>
-          <Link href="/cart">
-            <Button variant="ghost" className={styles.cartBadge} id="nav-cart">
-              Кошик {mounted && count > 0 ? `(${count})` : ""}
-              {mounted && count > 0 ? (
-                <span className={styles.subtotal}>· {subtotal} ₴</span>
-              ) : null}
-            </Button>
-          </Link>
-          <Link href="/admin/dashboard">
-            <Button variant="ghost" id="nav-admin">
-              Адмін
-            </Button>
-          </Link>
-        </nav>
       </div>
+
+      <div className={styles.mainBar}>
+        <div className={styles.container}>
+          <Link href="/" className={styles.logo}>
+            <Image
+              src="/next.svg"
+              alt="Book Store"
+              width={120}
+              height={40}
+              priority
+            />
+          </Link>
+
+          <div className={styles.search}>
+            <form action="/catalog" method="get" className={styles.searchForm}>
+              <input
+                type="text"
+                name="q"
+                placeholder="Пошук книг..."
+                className={styles.searchInput}
+                aria-label="Пошук книг"
+              />
+              <button
+                type="submit"
+                className={styles.searchButton}
+                aria-label="Шукати"
+              >
+                🔍
+              </button>
+            </form>
+          </div>
+
+          <div className={styles.userActions}>
+            <Link href="/cart" className={styles.cartLink}>
+              <span className={styles.cartIcon}>🛒</span>
+              <span className={styles.cartText}>Кошик</span>
+              {cartItemsCount > 0 && (
+                <span className={styles.cartBadge}>{cartItemsCount}</span>
+              )}
+            </Link>
+
+            <button
+              className={styles.mobileMenuButton}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-expanded={isMobileMenuOpen}
+              aria-label="Меню"
+            >
+              {isMobileMenuOpen ? "✕" : "☰"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <nav
+        className={`${styles.nav} ${isMobileMenuOpen ? styles.navOpen : ""}`}
+        aria-label="Головна навігація"
+      >
+        <div className={styles.container}>
+          <ul className={styles.navList}>
+            <li className={styles.navItem}>
+              <Link
+                href="/"
+                className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
+              >
+                Головна
+              </Link>
+            </li>
+            <li className={styles.navItem}>
+              <DropdownMenuRoot>
+                <DropdownMenuTrigger asChild>
+                  <button className={styles.navLink}>
+                    Каталог <span className={styles.dropdownArrow}>▼</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem asChild>
+                    <Link href="/catalog" className={styles.dropdownLink}>
+                      Всі книги
+                    </Link>
+                  </DropdownMenuItem>
+                  {categories.map((category) => (
+                    <DropdownMenuItem key={category.id} asChild>
+                      <Link
+                        href={`/catalog?categoryId=${category.id}`}
+                        className={styles.dropdownLink}
+                      >
+                        {category.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenuRoot>
+            </li>
+            <li className={styles.navItem}>
+              <Link
+                href="/catalog?onSale=true"
+                className={`${styles.navLink} ${styles.saleLink}`}
+              >
+                Акції
+              </Link>
+            </li>
+            <li className={styles.navItem}>
+              <Link href="/catalog?sort=newest" className={styles.navLink}>
+                Новинки
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </nav>
     </header>
   );
 }

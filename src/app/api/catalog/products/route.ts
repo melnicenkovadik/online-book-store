@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
 import { ProductModel } from "@/lib/models/Product";
 
+// Set cache control headers for 5 minutes
+const CACHE_CONTROL_HEADER = "public, s-maxage=300, stale-while-revalidate=600";
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -40,14 +43,22 @@ export async function GET(req: Request) {
     const match: Record<string, unknown> = {};
     const andExpr: Record<string, unknown>[] = [];
 
+    // Use text index for search when available
     if (q) {
-      andExpr.push({
-        title: {
-          $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          $options: "i",
-        },
-      });
+      if (q.length >= 3) {
+        // Use text search for longer queries
+        andExpr.push({ $text: { $search: q } });
+      } else {
+        // Use regex for shorter queries
+        andExpr.push({
+          title: {
+            $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+            $options: "i",
+          },
+        });
+      }
     }
+
     if (categoryId) {
       try {
         andExpr.push({ categoryIds: new mongoose.Types.ObjectId(categoryId) });
@@ -55,9 +66,11 @@ export async function GET(req: Request) {
         // ignore invalid ObjectId filter
       }
     }
+
     if (typeof inStock === "boolean") {
       andExpr.push(inStock ? { stock: { $gt: 0 } } : { stock: { $lte: 0 } });
     }
+
     if (typeof onSale === "boolean") {
       if (onSale) {
         andExpr.push({
@@ -77,18 +90,27 @@ export async function GET(req: Request) {
         });
       }
     }
+
     // Price filters on effectivePrice = salePrice ?? price
     const effectivePrice = { $ifNull: ["$salePrice", "$price"] } as const;
     if (typeof priceMin === "number") {
       andExpr.push({ $expr: { $gte: [effectivePrice, priceMin] } });
     }
+
     if (typeof priceMax === "number") {
       andExpr.push({ $expr: { $lte: [effectivePrice, priceMax] } });
     }
+
     if (andExpr.length) match.$and = andExpr;
 
     // Sorting
     const sortStage: Record<string, 1 | -1> = {};
+
+    // Add text score sorting if using text search
+    if (q && q.length >= 3) {
+      sortStage.score = { $meta: "textScore" };
+    }
+
     switch (sort) {
       case "price-asc":
         sortStage.effectivePrice = 1;
@@ -110,7 +132,10 @@ export async function GET(req: Request) {
     const per = Math.max(1, Math.min(100, perPage ?? 12));
     const skip = (pageNum - 1) * per;
 
+    // Optimize pipeline for better performance
     const pipeline: PipelineStage[] = [
+      // Add text score if using text search
+      ...(q && q.length >= 3 ? [{ $match: { $text: { $search: q } } }] : []),
       { $addFields: { effectivePrice } },
       ...(match.$and ? [{ $match: match }] : []),
       { $sort: sortStage },
@@ -148,11 +173,18 @@ export async function GET(req: Request) {
         : [],
     }));
 
+    // Return response with cache headers
     return NextResponse.json(
       { items, page: pageNum, perPage: per, total: agg.total },
-      { status: 200 },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": CACHE_CONTROL_HEADER,
+        },
+      },
     );
   } catch (err) {
+    console.error("Error fetching products:", err);
     return NextResponse.json(
       { error: (err as Error).message },
       { status: 500 },

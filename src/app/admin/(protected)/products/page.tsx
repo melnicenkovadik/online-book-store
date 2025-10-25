@@ -9,9 +9,14 @@ export default function AdminProductsListPage() {
   const [q, setQ] = React.useState("");
   const [page, setPage] = React.useState(1);
   const perPage = 20;
-  const { data, mutate, isLoading } = useSWR(
+  const { data, mutate, isLoading, error } = useSWR(
     ["admin/products", { q, page, perPage }],
     () => AdminApi.listProducts({ q, page, perPage }),
+    {
+      onError: (err) => {
+        console.error("Failed to load products:", err);
+      },
+    },
   );
 
   const onDelete = async (id: string) => {
@@ -87,42 +92,51 @@ export default function AdminProductsListPage() {
                 </td>
               </tr>
             )}
-            {data?.items?.map((p: Product) => (
-              <tr key={p.id}>
-                <td style={td}>{p.title}</td>
-                <td style={td}>
-                  {p.salePrice != null ? (
-                    <>
-                      <s style={{ color: "#6b7280" }}>{p.price}</s>{" "}
-                      <b>{p.salePrice}</b>
-                    </>
-                  ) : (
-                    p.price
-                  )}
-                </td>
-                <td style={td}>{p.stock}</td>
-                <td style={td}>
-                  <Link
-                    href={`/admin/products/${p.id}`}
-                    style={{ marginRight: 8 }}
-                  >
-                    Редагувати
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(p.id)}
-                    style={{
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 6,
-                      padding: "4px 8px",
-                    }}
-                  >
-                    Видалити
-                  </button>
+            {error && (
+              <tr>
+                <td colSpan={4} style={{ padding: 16, color: "#ef4444" }}>
+                  Помилка завантаження: {error.message}
                 </td>
               </tr>
-            ))}
-            {!isLoading && data?.items?.length === 0 && (
+            )}
+            {!isLoading &&
+              !error &&
+              data?.items?.map((p: Product) => (
+                <tr key={p.id}>
+                  <td style={td}>{p.title}</td>
+                  <td style={td}>
+                    {p.salePrice != null ? (
+                      <>
+                        <s style={{ color: "#6b7280" }}>{p.price}</s>{" "}
+                        <b>{p.salePrice}</b>
+                      </>
+                    ) : (
+                      p.price
+                    )}
+                  </td>
+                  <td style={td}>{p.stock}</td>
+                  <td style={td}>
+                    <Link
+                      href={`/admin/products/${p.id}`}
+                      style={{ marginRight: 8 }}
+                    >
+                      Редагувати
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(p.id)}
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 6,
+                        padding: "4px 8px",
+                      }}
+                    >
+                      Видалити
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            {!isLoading && !error && data?.items?.length === 0 && (
               <tr>
                 <td colSpan={4} style={{ padding: 16, color: "#6b7280" }}>
                   Товарів немає
