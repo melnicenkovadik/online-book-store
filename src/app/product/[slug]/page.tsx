@@ -7,16 +7,17 @@ import ProductClient from "./ProductClient";
 export const revalidate = 3600; // Revalidate every hour (ISR)
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   try {
-    const product = await getProduct(params.slug);
+    const { slug } = await params;
+    const product = await getProduct(slug);
     if (!product) {
       return {
         title: "Товар не знайдено | Онлайн-магазин книг",
@@ -68,7 +69,8 @@ async function getProduct(slug: string) {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProduct(params.slug);
+  const { slug } = await params;
+  const product = await getProduct(slug);
 
   if (!product) {
     notFound();

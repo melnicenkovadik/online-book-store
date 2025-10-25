@@ -1,17 +1,14 @@
 "use client";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React from "react";
 import useSWR from "swr";
 import type { AdminOrderDetail } from "@/services/admin";
 import { AdminApi } from "@/services/admin";
 
-export default function OrderDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function OrderDetailPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
   const { id } = params;
   const {
     data: order,

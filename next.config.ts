@@ -74,13 +74,6 @@ const nextConfig: NextConfig = {
 
   // Increase build performance
   reactStrictMode: true,
-  swcMinify: true,
-
-  // Disable dev overlay that might cause scroll issues
-  devIndicators: {
-    buildActivity: false,
-    buildActivityPosition: "bottom-right",
-  },
 
   // Configure redirects if needed
   redirects: async () => {
