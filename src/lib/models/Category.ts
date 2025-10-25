@@ -32,13 +32,6 @@ const CategorySchema = new Schema<CategoryDoc>(
   },
   {
     timestamps: true, // Add createdAt and updatedAt timestamps
-    // Create compound indexes for common query patterns
-    indexes: [
-      // Compound index for active categories + order (for navigation menus)
-      { isActive: 1, order: 1 },
-      // Compound index for parent + order (for hierarchical display)
-      { parentId: 1, order: 1 },
-    ],
   },
 );
 

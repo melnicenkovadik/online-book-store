@@ -5,6 +5,10 @@ export interface CategoryDoc {
   name: string;
   slug: string;
   parentId?: mongoose.Types.ObjectId | null;
+  order?: number;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ProductDoc {

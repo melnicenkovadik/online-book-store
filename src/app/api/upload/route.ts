@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { uploadImageToCloudinary } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           const buffer = Buffer.from(await file.arrayBuffer());
 
           // Завантажуємо в Cloudinary
-          const result = await uploadImageToCloudinary(buffer, file.name);
+          const result = await uploadImage(buffer);
 
           // Додаємо URL в результат
           uploadedUrls.push(result.secure_url);

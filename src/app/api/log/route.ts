@@ -23,7 +23,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const clientContext = {
       ...context,
       userAgent: req.headers.get("user-agent") || "unknown",
-      ip: req.ip || "unknown",
+      ip:
+        req.headers.get("x-forwarded-for") ||
+        req.headers.get("x-real-ip") ||
+        "unknown",
       referer: req.headers.get("referer") || "unknown",
       timestamp: new Date().toISOString(),
     };

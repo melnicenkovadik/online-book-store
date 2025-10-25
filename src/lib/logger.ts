@@ -34,7 +34,7 @@ const defaultConfig: LoggerConfig = {
     process.env.NODE_ENV === "production" ? LogLevel.INFO : LogLevel.DEBUG,
   enableConsole: true,
   enableRemote: process.env.NODE_ENV === "production",
-  remoteUrl: process.env.LOG_ENDPOINT,
+  ...(process.env.LOG_ENDPOINT ? { remoteUrl: process.env.LOG_ENDPOINT } : {}),
 };
 
 // In-memory log storage for development
@@ -132,8 +132,8 @@ export class Logger {
       timestamp,
       level,
       message,
-      context,
-      error,
+      ...(context ? { context } : {}),
+      ...(error ? { error } : {}),
     };
 
     // Store in memory (limited size)

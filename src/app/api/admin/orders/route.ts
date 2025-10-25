@@ -34,7 +34,6 @@ export async function GET(req: Request) {
   }
 
   const total = await OrderModel.countDocuments(filter).exec();
-  // @ts-expect-error - mongoose типи складні для TypeScript
   const items = await OrderModel.find(filter)
     .sort({ createdAt: -1 })
     .skip((page - 1) * perPage)
@@ -43,7 +42,7 @@ export async function GET(req: Request) {
     .exec();
 
   // Map _id to id for client convenience
-  const mapped = items.map((o: { _id: unknown } & Record<string, unknown>) => ({
+  const mapped = items.map((o) => ({
     ...o,
     id: String(o._id),
   }));

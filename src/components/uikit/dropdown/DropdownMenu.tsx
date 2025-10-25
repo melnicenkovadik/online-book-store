@@ -50,7 +50,7 @@ export function DropdownMenuItem({
   children: React.ReactNode;
   id?: string;
   className?: string;
-  onSelect: (event: Event) => void;
+  onSelect?: (event: Event) => void;
 } & Omit<
   React.ComponentProps<typeof Dropdown.Item>,
   "className" | "onSelect"
@@ -59,7 +59,7 @@ export function DropdownMenuItem({
     <Dropdown.Item
       id={id}
       className={cn(styles.item, className)}
-      onSelect={onSelect}
+      {...(onSelect ? { onSelect } : {})}
       {...rest}
     >
       {children}

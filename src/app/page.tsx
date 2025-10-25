@@ -56,7 +56,7 @@ export default async function Home() {
           </p>
           <div className={styles.actions}>
             <Link href="/catalog" passHref>
-              <Button variant="primary" size="large">
+              <Button variant="primary" size="lg">
                 Перейти до каталогу
               </Button>
             </Link>
@@ -105,7 +105,7 @@ export default async function Home() {
         </div>
         <div className={styles.viewAll}>
           <Link href="/catalog" passHref>
-            <Button variant="outline">Переглянути всі книги</Button>
+            <Button variant="secondary">Переглянути всі книги</Button>
           </Link>
         </div>
       </section>

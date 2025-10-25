@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
@@ -28,15 +29,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <QueryProvider>
-          <Header />
-          <main>
-            <div style={{ maxWidth: 1180, margin: "0 auto", padding: "16px" }}>
-              {children}
-            </div>
-          </main>
-          <Footer />
-        </QueryProvider>
+        <NuqsAdapter>
+          <QueryProvider>
+            <Header />
+            <main>
+              <div
+                style={{ maxWidth: 1180, margin: "0 auto", padding: "16px" }}
+              >
+                {children}
+              </div>
+            </main>
+            <Footer />
+          </QueryProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );

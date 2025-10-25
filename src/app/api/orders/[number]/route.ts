@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
-import type { OrderDoc } from "@/lib/models/Order";
 import { OrderModel } from "@/lib/models/Order";
+import type { OrderDoc } from "@/types/database";
 
 export async function GET(
   _req: NextRequest,
@@ -10,7 +10,6 @@ export async function GET(
   try {
     await connectToDB();
     const { number } = await ctx.params;
-    // @ts-expect-error
     const order = (await OrderModel.findOne({ number })
       .setOptions({ lean: true })
       .exec()) as OrderDoc | null;

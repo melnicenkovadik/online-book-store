@@ -84,7 +84,10 @@ export async function middleware(request: NextRequest) {
     }
 
     // Rate limiting for API routes
-    const ip = request.ip || "unknown";
+    const ip =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
     const now = Date.now();
     const pathType = request.nextUrl.pathname.startsWith("/api/admin/login")
       ? "auth"

@@ -104,11 +104,16 @@ export async function uploadImage(
       ...(tags ? { tags } : {}),
     };
 
-    const uploadCallback = (error: Error, result: CloudinaryUploadResult) => {
+    const uploadCallback = (
+      error: Error | undefined,
+      result: CloudinaryUploadResult | undefined,
+    ) => {
       if (error) {
         reject(error);
-      } else {
+      } else if (result) {
         resolve(result);
+      } else {
+        reject(new Error("Upload failed without error or result"));
       }
     };
 

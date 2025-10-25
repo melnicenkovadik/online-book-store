@@ -38,6 +38,15 @@ export async function GET(req: Request) {
       | "newest"
       | undefined;
 
+    // New attribute filters
+    const year = searchParams.get("year")
+      ? Number(searchParams.get("year"))
+      : undefined;
+    const author = searchParams.get("author") ?? undefined;
+    const publisher = searchParams.get("publisher") ?? undefined;
+    const language = searchParams.get("language") ?? undefined;
+    const coverType = searchParams.get("coverType") ?? undefined;
+
     await connectToDB();
 
     const match: Record<string, unknown> = {};
@@ -101,10 +110,40 @@ export async function GET(req: Request) {
       andExpr.push({ $expr: { $lte: [effectivePrice, priceMax] } });
     }
 
+    // Filter by attributes
+    if (year) {
+      andExpr.push({ "attributes.year": year });
+    }
+    if (author) {
+      andExpr.push({
+        "attributes.author": {
+          $regex: author.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          $options: "i",
+        },
+      });
+    }
+    if (publisher) {
+      andExpr.push({
+        "attributes.publisher": {
+          $regex: publisher.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          $options: "i",
+        },
+      });
+    }
+    if (language) {
+      andExpr.push({ "attributes.language": language });
+    }
+    if (coverType) {
+      andExpr.push({ "attributes.coverType": coverType });
+    }
+
     if (andExpr.length) match.$and = andExpr;
 
     // Sorting
-    const sortStage: Record<string, 1 | -1> = {};
+    const sortStage: Record<
+      string,
+      1 | -1 | { $meta: "textScore" | "indexKey" }
+    > = {};
 
     // Add text score sorting if using text search
     if (q && q.length >= 3) {

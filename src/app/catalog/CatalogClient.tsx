@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import React from "react";
 import OptimizedImage from "@/components/OptimizedImage";
 import {
@@ -14,210 +14,155 @@ import {
   Slider,
 } from "@/components/uikit";
 import { useDebounce } from "@/hooks";
-import { CatalogService } from "@/services/catalog";
+import { CatalogService, type FacetsResponse } from "@/services/catalog";
 import type { Category, Product } from "@/types/catalog";
 import styles from "./Catalog.module.scss";
 
 export default function CatalogClient() {
-  const _router = useRouter();
-  const sp = useSearchParams();
-
-  // Filters & sort state
-  const [q, setQ] = React.useState("");
-  const [categoryId, setCategoryId] = React.useState<string | undefined>();
-  const [page, setPage] = React.useState(1);
-  const [priceMin, setPriceMin] = React.useState<number | "">("");
-  const [priceMax, setPriceMax] = React.useState<number | "">("");
-  const [inStockOnly, setInStockOnly] = React.useState(false);
-  const [onSaleOnly, setOnSaleOnly] = React.useState(false);
-  const [sort, setSort] = React.useState<
-    "price-asc" | "price-desc" | "title-asc" | "title-desc" | "newest"
-  >("newest");
-
   const perPage = 12;
-  const debouncedQ = useDebounce(q, 300);
-  const lastUrlRef = React.useRef<string>("");
-  const rafRef = React.useRef<number | null>(null);
 
-  // Initialize from URL once
-  React.useEffect(() => {
-    const qp = sp;
-    const getBool = (key: string) => {
-      const v = qp.get(key);
-      return v === "true" ? true : v === "false" ? false : undefined;
-    };
-    const getNum = (key: string) =>
-      qp.get(key) ? Number(qp.get(key)) : undefined;
-
-    setQ(qp.get("q") ?? "");
-    setCategoryId(qp.get("categoryId") ?? undefined);
-    setPage(getNum("page") ?? 1);
-
-    const pmin0 = getNum("priceMin");
-    const pmax0 = getNum("priceMax");
-    if (pmin0 != null) setPriceMin(pmin0);
-    if (pmax0 != null) setPriceMax(pmax0);
-
-    const in0 = getBool("inStock");
-    const sale0 = getBool("onSale");
-    if (in0 != null) setInStockOnly(in0);
-    if (sale0 != null) setOnSaleOnly(sale0);
-
-    const s0 = qp.get("sort") as typeof sort | null;
-    if (s0) setSort(s0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sp]); // Run only once on mount
-
-  // Update URL helper - only via History API to avoid navigation/scroll reset
-  const updateUrl = React.useCallback(
-    (
-      overrides: Partial<{
-        q: string;
-        categoryId: string | undefined;
-        page: number;
-        priceMin: number | "";
-        priceMax: number | "";
-        inStockOnly: boolean;
-        onSaleOnly: boolean;
-        sort:
-          | "price-asc"
-          | "price-desc"
-          | "title-asc"
-          | "title-desc"
-          | "newest";
-      }> = {},
-    ) => {
-      if (typeof window === "undefined") return;
-
-      const usp = new URLSearchParams();
-
-      const qVal = overrides.q ?? debouncedQ;
-      const catVal = overrides.categoryId ?? categoryId;
-      const pageVal = overrides.page ?? page;
-      const minVal = overrides.priceMin ?? priceMin;
-      const maxVal = overrides.priceMax ?? priceMax;
-      const inVal = overrides.inStockOnly ?? inStockOnly;
-      const saleVal = overrides.onSaleOnly ?? onSaleOnly;
-      const sortVal = overrides.sort ?? sort;
-
-      if (qVal) usp.set("q", qVal);
-      if (catVal) usp.set("categoryId", catVal);
-      if (pageVal !== 1) usp.set("page", String(pageVal));
-      if (minVal !== "") usp.set("priceMin", String(minVal));
-      if (maxVal !== "") usp.set("priceMax", String(maxVal));
-      if (inVal) usp.set("inStock", "true");
-      if (saleVal) usp.set("onSale", "true");
-      if (sortVal !== "newest") usp.set("sort", sortVal);
-
-      const newUrl = `/catalog${usp.toString() ? `?${usp.toString()}` : ""}`;
-      const currentUrl = `${window.location.pathname}${window.location.search}`;
-      if (newUrl !== currentUrl && newUrl !== lastUrlRef.current) {
-        if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(() => {
-          window.history.replaceState(null, "", newUrl);
-          lastUrlRef.current = newUrl;
-          rafRef.current = null;
-        });
-      }
+  // Використовуємо nuqs для синхронізації URL state
+  const [filters, setFilters] = useQueryStates(
+    {
+      q: parseAsString.withDefault(""),
+      categoryId: parseAsString,
+      page: parseAsInteger.withDefault(1),
+      priceMin: parseAsInteger,
+      priceMax: parseAsInteger,
+      inStock: parseAsString,
+      onSale: parseAsString,
+      sort: parseAsString.withDefault("newest"),
+      year: parseAsInteger,
+      author: parseAsString,
+      publisher: parseAsString,
+      language: parseAsString,
+      coverType: parseAsString,
     },
-    [
-      debouncedQ,
-      categoryId,
-      page,
-      priceMin,
-      priceMax,
-      inStockOnly,
-      onSaleOnly,
-      sort,
-    ],
+    {
+      history: "replace",
+      shallow: true,
+      scroll: false, // Вимикаємо автоматичний скрол
+    },
   );
 
-  // React Query for products
-  const productParams = React.useMemo(
-    () => ({
-      q: debouncedQ || undefined,
-      categoryId,
-      page,
+  const debouncedQ = useDebounce(filters.q, 300);
+
+  // React Query для products
+  const productParams = React.useMemo(() => {
+    const params: Record<string, unknown> = {
+      page: filters.page,
       perPage,
-      sort,
-      priceMin: priceMin !== "" ? priceMin : undefined,
-      priceMax: priceMax !== "" ? priceMax : undefined,
-      inStock: inStockOnly || undefined,
-      onSale: onSaleOnly || undefined,
-    }),
-    [
-      debouncedQ,
-      categoryId,
-      page,
-      sort,
-      priceMin,
-      priceMax,
-      inStockOnly,
-      onSaleOnly,
-    ],
-  );
+      sort: filters.sort,
+    };
 
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+    if (debouncedQ) params.q = debouncedQ;
+    if (filters.categoryId) params.categoryId = filters.categoryId;
+    if (filters.priceMin != null) params.priceMin = filters.priceMin;
+    if (filters.priceMax != null) params.priceMax = filters.priceMax;
+    if (filters.inStock === "true") params.inStock = true;
+    if (filters.onSale === "true") params.onSale = true;
+    if (filters.year) params.year = filters.year;
+    if (filters.author) params.author = filters.author;
+    if (filters.publisher) params.publisher = filters.publisher;
+    if (filters.language) params.language = filters.language;
+    if (filters.coverType) params.coverType = filters.coverType;
+
+    return params;
+  }, [
+    debouncedQ,
+    filters.categoryId,
+    filters.page,
+    filters.sort,
+    filters.priceMin,
+    filters.priceMax,
+    filters.inStock,
+    filters.onSale,
+    filters.year,
+    filters.author,
+    filters.publisher,
+    filters.language,
+    filters.coverType,
+  ]);
+
+  const { data: productsData, isPending: productsLoading } = useQuery({
     queryKey: ["products", productParams],
-    queryFn: () => CatalogService.getProducts(productParams),
-    keepPreviousData: true,
+    queryFn: () => CatalogService.getProducts(productParams as any),
   });
 
   const products: Product[] = productsData?.items ?? [];
   const total = productsData?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / perPage));
 
-  // React Query for categories
+  // React Query для categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: () => CatalogService.getCategories(),
   });
 
-  // React Query for facets
-  const facetParams = React.useMemo(
-    () => ({
-      q: debouncedQ || undefined,
-      categoryId,
-      sort,
-      inStock: inStockOnly || undefined,
-      onSale: onSaleOnly || undefined,
-    }),
-    [debouncedQ, categoryId, sort, inStockOnly, onSaleOnly],
-  );
+  // React Query для facets
+  const facetParams = React.useMemo(() => {
+    const params: Record<string, unknown> = { sort: filters.sort };
 
-  const { data: facets } = useQuery({
+    if (debouncedQ) params.q = debouncedQ;
+    if (filters.categoryId) params.categoryId = filters.categoryId;
+    if (filters.inStock === "true") params.inStock = true;
+    if (filters.onSale === "true") params.onSale = true;
+    if (filters.year) params.year = filters.year;
+    if (filters.author) params.author = filters.author;
+    if (filters.publisher) params.publisher = filters.publisher;
+    if (filters.language) params.language = filters.language;
+    if (filters.coverType) params.coverType = filters.coverType;
+
+    return params;
+  }, [
+    debouncedQ,
+    filters.categoryId,
+    filters.sort,
+    filters.inStock,
+    filters.onSale,
+    filters.year,
+    filters.author,
+    filters.publisher,
+    filters.language,
+    filters.coverType,
+  ]);
+
+  const { data: facets } = useQuery<FacetsResponse>({
     queryKey: ["facets", facetParams],
-    queryFn: () => CatalogService.getCategoryFacets(facetParams),
+    queryFn: () => CatalogService.getCategoryFacets(facetParams as any),
   });
 
-  // No automatic URL sync in effects — only explicit updates in handlers
+  // Хелпер для оновлення фільтрів
+  const updateFilter = React.useCallback(
+    (updates: Partial<typeof filters>) => {
+      // Автоматично скидаємо сторінку на 1, якщо це не зміна сторінки
+      if (!("page" in updates)) {
+        updates.page = 1;
+      }
 
-  // Reset to page 1 helper
-  const _resetPage = React.useCallback(() => {
-    setPage(1);
-  }, []);
+      setFilters(updates);
+    },
+    [setFilters],
+  );
 
-  // Reset all filters
+  // Скидання всіх фільтрів
   const resetFilters = React.useCallback(() => {
-    setQ("");
-    setCategoryId(undefined);
-    setPriceMin("");
-    setPriceMax("");
-    setInStockOnly(false);
-    setOnSaleOnly(false);
-    setSort("newest");
-    setPage(1);
-    updateUrl({
+    setFilters({
       q: "",
-      categoryId: undefined,
+      categoryId: null,
       page: 1,
-      priceMin: "",
-      priceMax: "",
-      inStockOnly: false,
-      onSaleOnly: false,
+      priceMin: null,
+      priceMax: null,
+      inStock: null,
+      onSale: null,
       sort: "newest",
+      year: null,
+      author: null,
+      publisher: null,
+      language: null,
+      coverType: null,
     });
-  }, [updateUrl]);
+  }, [setFilters]);
 
   return (
     <div className={styles.page} id="catalog-page">
@@ -227,25 +172,17 @@ export default function CatalogClient() {
         <input
           id="catalog-search"
           placeholder="Пошук…"
-          value={q}
-          onChange={(e) => {
-            const value = e.target.value;
-            setQ(value);
-            setPage(1);
-            updateUrl({ q: value, page: 1 });
-          }}
+          value={filters.q}
+          onChange={(e) => updateFilter({ q: e.target.value })}
           className={styles.searchInput}
           aria-label="Пошук товарів"
         />
 
         <SelectRoot
-          value={categoryId ?? "all"}
-          onValueChange={(v) => {
-            const nextCategory = v === "all" ? undefined : v;
-            setCategoryId(nextCategory);
-            setPage(1);
-            updateUrl({ categoryId: nextCategory, page: 1 });
-          }}
+          value={filters.categoryId ?? "all"}
+          onValueChange={(v) =>
+            updateFilter({ categoryId: v === "all" ? null : v })
+          }
         >
           <SelectTrigger
             id="catalog-category-trigger"
@@ -277,30 +214,140 @@ export default function CatalogClient() {
           min={0}
           max={1000}
           value={
-            [
-              priceMin === "" ? 0 : priceMin,
-              priceMax === "" ? 1000 : priceMax,
-            ] as [number, number]
+            [filters.priceMin ?? 0, filters.priceMax ?? 1000] as [
+              number,
+              number,
+            ]
           }
-          onChange={([lo, hi]) => {
-            setPriceMin(lo);
-            setPriceMax(hi);
-            setPage(1);
-            updateUrl({ priceMin: lo, priceMax: hi, page: 1 });
-          }}
+          onChange={([lo, hi]) =>
+            updateFilter({ priceMin: lo || null, priceMax: hi || null })
+          }
           aria-label="Діапазон ціни"
         />
+
+        {/* Новий фільтр: Рік */}
+        {facets?.years && facets.years.length > 0 && (
+          <SelectRoot
+            value={filters.year?.toString() ?? "all"}
+            onValueChange={(v) =>
+              updateFilter({ year: v === "all" ? null : Number(v) })
+            }
+          >
+            <SelectTrigger className={styles.selectTrigger} aria-label="Рік">
+              <SelectValue placeholder="Всі роки" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Всі роки</SelectItem>
+              {facets.years.map((y) => (
+                <SelectItem key={y.year} value={y.year.toString()}>
+                  {y.year} ({y.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </SelectRoot>
+        )}
+
+        {/* Новий фільтр: Автор */}
+        {facets?.authors && facets.authors.length > 0 && (
+          <SelectRoot
+            value={filters.author ?? "all"}
+            onValueChange={(v) =>
+              updateFilter({ author: v === "all" ? null : v })
+            }
+          >
+            <SelectTrigger className={styles.selectTrigger} aria-label="Автор">
+              <SelectValue placeholder="Всі автори" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Всі автори</SelectItem>
+              {facets.authors.slice(0, 20).map((a) => (
+                <SelectItem key={a.author} value={a.author}>
+                  {a.author} ({a.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </SelectRoot>
+        )}
+
+        {/* Новий фільтр: Видавець */}
+        {facets?.publishers && facets.publishers.length > 0 && (
+          <SelectRoot
+            value={filters.publisher ?? "all"}
+            onValueChange={(v) =>
+              updateFilter({ publisher: v === "all" ? null : v })
+            }
+          >
+            <SelectTrigger
+              className={styles.selectTrigger}
+              aria-label="Видавець"
+            >
+              <SelectValue placeholder="Всі видавці" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Всі видавці</SelectItem>
+              {facets.publishers.slice(0, 20).map((p) => (
+                <SelectItem key={p.publisher} value={p.publisher}>
+                  {p.publisher} ({p.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </SelectRoot>
+        )}
+
+        {/* Новий фільтр: Мова */}
+        {facets?.languages && facets.languages.length > 0 && (
+          <SelectRoot
+            value={filters.language ?? "all"}
+            onValueChange={(v) =>
+              updateFilter({ language: v === "all" ? null : v })
+            }
+          >
+            <SelectTrigger className={styles.selectTrigger} aria-label="Мова">
+              <SelectValue placeholder="Всі мови" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Всі мови</SelectItem>
+              {facets.languages.map((l) => (
+                <SelectItem key={l.language} value={l.language}>
+                  {l.language} ({l.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </SelectRoot>
+        )}
+
+        {/* Новий фільтр: Тип обкладинки */}
+        {facets?.coverTypes && facets.coverTypes.length > 0 && (
+          <SelectRoot
+            value={filters.coverType ?? "all"}
+            onValueChange={(v) =>
+              updateFilter({ coverType: v === "all" ? null : v })
+            }
+          >
+            <SelectTrigger
+              className={styles.selectTrigger}
+              aria-label="Тип обкладинки"
+            >
+              <SelectValue placeholder="Всі типи" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Всі типи</SelectItem>
+              {facets.coverTypes.map((ct) => (
+                <SelectItem key={ct.coverType} value={ct.coverType}>
+                  {ct.coverType} ({ct.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </SelectRoot>
+        )}
 
         <label className={styles.checkbox}>
           <input
             type="checkbox"
-            checked={inStockOnly}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setInStockOnly(next);
-              setPage(1);
-              updateUrl({ inStockOnly: next, page: 1 });
-            }}
+            checked={filters.inStock === "true"}
+            onChange={(e) =>
+              updateFilter({ inStock: e.target.checked ? "true" : null })
+            }
             aria-label="Показати тільки товари в наявності"
           />{" "}
           В наявності
@@ -309,26 +356,18 @@ export default function CatalogClient() {
         <label className={styles.checkbox}>
           <input
             type="checkbox"
-            checked={onSaleOnly}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setOnSaleOnly(next);
-              setPage(1);
-              updateUrl({ onSaleOnly: next, page: 1 });
-            }}
+            checked={filters.onSale === "true"}
+            onChange={(e) =>
+              updateFilter({ onSale: e.target.checked ? "true" : null })
+            }
             aria-label="Показати тільки товари зі знижкою"
           />{" "}
           Зі знижкою
         </label>
 
         <SelectRoot
-          value={sort}
-          onValueChange={(v) => {
-            const nextSort = v as typeof sort;
-            setSort(nextSort);
-            setPage(1);
-            updateUrl({ sort: nextSort, page: 1 });
-          }}
+          value={filters.sort}
+          onValueChange={(v) => updateFilter({ sort: v })}
         >
           <SelectTrigger
             id="catalog-sort-trigger"
@@ -361,102 +400,124 @@ export default function CatalogClient() {
 
       {/* Active filter chips */}
       <div className={styles.chips} role="region" aria-label="Активні фільтри">
-        {q && (
+        {filters.q && (
           <button
             type="button"
             className={styles.chip}
-            onClick={() => {
-              setQ("");
-              updateUrl({ q: "", page: 1 });
-              setPage(1);
-            }}
+            onClick={() => updateFilter({ q: "" })}
             aria-label="Видалити пошуковий запит"
           >
-            пошук: "{q}" ×
+            пошук: "{filters.q}" ×
           </button>
         )}
-        {categoryId && (
+        {filters.categoryId && (
           <button
             type="button"
             className={styles.chip}
-            onClick={() => {
-              setCategoryId(undefined);
-              setPage(1);
-              updateUrl({ categoryId: undefined, page: 1 });
-            }}
+            onClick={() => updateFilter({ categoryId: null })}
             aria-label="Видалити фільтр за категорією"
           >
             категорія ×
           </button>
         )}
-        {priceMin !== "" && (
+        {filters.priceMin != null && (
           <button
             type="button"
             className={styles.chip}
-            onClick={() => {
-              setPriceMin("");
-              setPage(1);
-              updateUrl({ priceMin: "", page: 1 });
-            }}
+            onClick={() => updateFilter({ priceMin: null })}
             aria-label="Видалити мінімальну ціну"
           >
-            мін: {priceMin} ×
+            мін: {filters.priceMin} ×
           </button>
         )}
-        {priceMax !== "" && (
+        {filters.priceMax != null && (
           <button
             type="button"
             className={styles.chip}
-            onClick={() => {
-              setPriceMax("");
-              setPage(1);
-              updateUrl({ priceMax: "", page: 1 });
-            }}
+            onClick={() => updateFilter({ priceMax: null })}
             aria-label="Видалити максимальну ціну"
           >
-            макс: {priceMax} ×
+            макс: {filters.priceMax} ×
           </button>
         )}
-        {inStockOnly && (
+        {filters.year && (
           <button
             type="button"
             className={styles.chip}
-            onClick={() => {
-              setInStockOnly(false);
-              setPage(1);
-              updateUrl({ inStockOnly: false, page: 1 });
-            }}
+            onClick={() => updateFilter({ year: null })}
+            aria-label="Видалити фільтр за роком"
+          >
+            рік: {filters.year} ×
+          </button>
+        )}
+        {filters.author && (
+          <button
+            type="button"
+            className={styles.chip}
+            onClick={() => updateFilter({ author: null })}
+            aria-label="Видалити фільтр за автором"
+          >
+            автор: {filters.author} ×
+          </button>
+        )}
+        {filters.publisher && (
+          <button
+            type="button"
+            className={styles.chip}
+            onClick={() => updateFilter({ publisher: null })}
+            aria-label="Видалити фільтр за видавцем"
+          >
+            видавець: {filters.publisher} ×
+          </button>
+        )}
+        {filters.language && (
+          <button
+            type="button"
+            className={styles.chip}
+            onClick={() => updateFilter({ language: null })}
+            aria-label="Видалити фільтр за мовою"
+          >
+            мова: {filters.language} ×
+          </button>
+        )}
+        {filters.coverType && (
+          <button
+            type="button"
+            className={styles.chip}
+            onClick={() => updateFilter({ coverType: null })}
+            aria-label="Видалити фільтр за обкладинкою"
+          >
+            обкладинка: {filters.coverType} ×
+          </button>
+        )}
+        {filters.inStock === "true" && (
+          <button
+            type="button"
+            className={styles.chip}
+            onClick={() => updateFilter({ inStock: null })}
             aria-label="Видалити фільтр 'в наявності'"
           >
             в наявності ×
           </button>
         )}
-        {onSaleOnly && (
+        {filters.onSale === "true" && (
           <button
             type="button"
             className={styles.chip}
-            onClick={() => {
-              setOnSaleOnly(false);
-              setPage(1);
-              updateUrl({ onSaleOnly: false, page: 1 });
-            }}
+            onClick={() => updateFilter({ onSale: null })}
             aria-label="Видалити фільтр 'зі знижкою'"
           >
             зі знижкою ×
           </button>
         )}
-        {sort !== "newest" && (
+        {filters.sort !== "newest" && (
           <button
             type="button"
             className={styles.chip}
-            onClick={() => {
-              setSort("newest");
-              setPage(1);
-              updateUrl({ sort: "newest", page: 1 });
-            }}
+            onClick={() => updateFilter({ sort: "newest" })}
             aria-label="Скинути сортування"
           >
-            сортування: {sort} ×
+            сортування: {filters.sort} ×
           </button>
         )}
       </div>
@@ -547,28 +608,24 @@ export default function CatalogClient() {
           <Button
             id="catalog-prev"
             variant="ghost"
-            disabled={page <= 1}
-            onClick={() => {
-              const next = Math.max(1, page - 1);
-              setPage(next);
-              updateUrl({ page: next });
-            }}
+            disabled={filters.page <= 1}
+            onClick={() =>
+              updateFilter({ page: Math.max(1, filters.page - 1) })
+            }
             aria-label="Попередня сторінка"
           >
             Назад
           </Button>
           <span id="catalog-page-indicator" style={{ opacity: 0.8 }}>
-            Сторінка {page} з {pages}
+            Сторінка {filters.page} з {pages}
           </span>
           <Button
             id="catalog-next"
             variant="ghost"
-            disabled={page >= pages}
-            onClick={() => {
-              const next = Math.min(pages, page + 1);
-              setPage(next);
-              updateUrl({ page: next });
-            }}
+            disabled={filters.page >= pages}
+            onClick={() =>
+              updateFilter({ page: Math.min(pages, filters.page + 1) })
+            }
             aria-label="Наступна сторінка"
           >
             Далі

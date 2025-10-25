@@ -18,7 +18,10 @@ export function withErrorHandling(
       const requestInfo = {
         url: req.url,
         method: req.method,
-        ip: req.ip || "unknown",
+        ip:
+          req.headers.get("x-forwarded-for") ||
+          req.headers.get("x-real-ip") ||
+          "unknown",
       };
 
       // Handle error and get standardized response

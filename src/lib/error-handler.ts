@@ -35,8 +35,8 @@ export class AppError extends Error {
     this.name = "AppError";
     this.type = type;
     this.statusCode = statusCode;
-    this.context = context;
-    this.originalError = originalError;
+    if (context) this.context = context;
+    if (originalError) this.originalError = originalError;
 
     // Capture stack trace
     if (Error.captureStackTrace) {

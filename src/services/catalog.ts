@@ -13,11 +13,21 @@ export type ProductsQuery = {
   priceMax?: number;
   inStock?: boolean;
   onSale?: boolean;
+  year?: number;
+  author?: string;
+  publisher?: string;
+  language?: string;
+  coverType?: string;
 };
 
 export type FacetsResponse = {
   categories: Record<string, number>;
   price: { min: number; max: number };
+  years: Array<{ year: number; count: number }>;
+  authors: Array<{ author: string; count: number }>;
+  publishers: Array<{ publisher: string; count: number }>;
+  languages: Array<{ language: string; count: number }>;
+  coverTypes: Array<{ coverType: string; count: number }>;
 };
 
 export const CatalogService = {
@@ -54,6 +64,11 @@ export const CatalogService = {
       usp.set("inStock", String(params.inStock));
     if (typeof params.onSale === "boolean")
       usp.set("onSale", String(params.onSale));
+    if (params.year) usp.set("year", String(params.year));
+    if (params.author) usp.set("author", params.author);
+    if (params.publisher) usp.set("publisher", params.publisher);
+    if (params.language) usp.set("language", params.language);
+    if (params.coverType) usp.set("coverType", params.coverType);
 
     const path = `/api/catalog/products${usp.toString() ? `?${usp.toString()}` : ""}`;
 
@@ -91,6 +106,11 @@ export const CatalogService = {
       usp.set("inStock", String(params.inStock));
     if (typeof params.onSale === "boolean")
       usp.set("onSale", String(params.onSale));
+    if (params.year) usp.set("year", String(params.year));
+    if (params.author) usp.set("author", params.author);
+    if (params.publisher) usp.set("publisher", params.publisher);
+    if (params.language) usp.set("language", params.language);
+    if (params.coverType) usp.set("coverType", params.coverType);
 
     const path = `/api/catalog/facets${usp.toString() ? `?${usp.toString()}` : ""}`;
 

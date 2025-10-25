@@ -26,6 +26,15 @@ export async function GET(req: Request) {
       ? searchParams.get("onSale") === "true"
       : undefined;
 
+    // New attribute filters
+    const year = searchParams.get("year")
+      ? Number(searchParams.get("year"))
+      : undefined;
+    const author = searchParams.get("author") ?? undefined;
+    const publisher = searchParams.get("publisher") ?? undefined;
+    const language = searchParams.get("language") ?? undefined;
+    const coverType = searchParams.get("coverType") ?? undefined;
+
     await connectToDB();
 
     const match: Record<string, unknown> = {};
@@ -89,6 +98,33 @@ export async function GET(req: Request) {
       andExpr.push({ $expr: { $lte: [effectivePrice, priceMax] } });
     }
 
+    // Filter by attributes
+    if (year) {
+      andExpr.push({ "attributes.year": year });
+    }
+    if (author) {
+      andExpr.push({
+        "attributes.author": {
+          $regex: author.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          $options: "i",
+        },
+      });
+    }
+    if (publisher) {
+      andExpr.push({
+        "attributes.publisher": {
+          $regex: publisher.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          $options: "i",
+        },
+      });
+    }
+    if (language) {
+      andExpr.push({ "attributes.language": language });
+    }
+    if (coverType) {
+      andExpr.push({ "attributes.coverType": coverType });
+    }
+
     if (andExpr.length) match.$and = andExpr;
 
     // Optimize pipeline for facets
@@ -112,12 +148,52 @@ export async function GET(req: Request) {
             },
             { $project: { _id: 0, min: 1, max: 1 } },
           ],
+          years: [
+            { $group: { _id: "$attributes.year", count: { $sum: 1 } } },
+            { $match: { _id: { $ne: null } } },
+            { $sort: { _id: -1 } },
+            { $project: { _id: 0, year: "$_id", count: 1 } },
+          ],
+          authors: [
+            { $group: { _id: "$attributes.author", count: { $sum: 1 } } },
+            { $match: { _id: { $ne: null } } },
+            { $sort: { count: -1 } },
+            { $limit: 50 },
+            { $project: { _id: 0, author: "$_id", count: 1 } },
+          ],
+          publishers: [
+            { $group: { _id: "$attributes.publisher", count: { $sum: 1 } } },
+            { $match: { _id: { $ne: null } } },
+            { $sort: { count: -1 } },
+            { $limit: 50 },
+            { $project: { _id: 0, publisher: "$_id", count: 1 } },
+          ],
+          languages: [
+            { $group: { _id: "$attributes.language", count: { $sum: 1 } } },
+            { $match: { _id: { $ne: null } } },
+            { $sort: { count: -1 } },
+            { $project: { _id: 0, language: "$_id", count: 1 } },
+          ],
+          coverTypes: [
+            { $group: { _id: "$attributes.coverType", count: { $sum: 1 } } },
+            { $match: { _id: { $ne: null } } },
+            { $sort: { count: -1 } },
+            { $project: { _id: 0, coverType: "$_id", count: 1 } },
+          ],
         },
       },
     ];
 
     const result = await ProductModel.aggregate(pipeline);
-    const facets = result[0] ?? { categories: [], price: [] };
+    const facets = result[0] ?? {
+      categories: [],
+      price: [],
+      years: [],
+      authors: [],
+      publishers: [],
+      languages: [],
+      coverTypes: [],
+    };
 
     // Transform categories array to object
     const categoriesObj: Record<string, number> = {};
@@ -138,6 +214,20 @@ export async function GET(req: Request) {
       {
         categories: categoriesObj,
         price: priceRange,
+        years: facets.years as Array<{ year: number; count: number }>,
+        authors: facets.authors as Array<{ author: string; count: number }>,
+        publishers: facets.publishers as Array<{
+          publisher: string;
+          count: number;
+        }>,
+        languages: facets.languages as Array<{
+          language: string;
+          count: number;
+        }>,
+        coverTypes: facets.coverTypes as Array<{
+          coverType: string;
+          count: number;
+        }>,
       },
       {
         status: 200,

@@ -9,7 +9,7 @@ import { useEffect, useRef } from "react";
  */
 export function usePrevious<T>(value: T): T | undefined {
   // Create a ref to store the previous value
-  const ref = useRef<T>();
+  const ref = useRef<T | undefined>(undefined);
 
   // Update the ref value when the value changes
   useEffect(() => {

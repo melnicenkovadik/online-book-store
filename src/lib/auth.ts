@@ -5,8 +5,8 @@ import { type NextRequest, NextResponse } from "next/server";
  * Verify admin authentication from cookies
  * @returns Boolean indicating if user is authenticated
  */
-export function isAuthenticated(): boolean {
-  const cookieStore = cookies();
+export async function isAuthenticated(): Promise<boolean> {
+  const cookieStore = await cookies();
   const token = cookieStore.get("admin_token");
 
   if (!token?.value) {
@@ -56,8 +56,8 @@ export function adminAuthMiddleware(request: NextRequest) {
  * Get current admin user from token
  * @returns Admin user info or null
  */
-export function getCurrentAdmin() {
-  const cookieStore = cookies();
+export async function getCurrentAdmin() {
+  const cookieStore = await cookies();
   const token = cookieStore.get("admin_token");
 
   if (!token?.value) {

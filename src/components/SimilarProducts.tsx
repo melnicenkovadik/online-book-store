@@ -57,7 +57,8 @@ export default function SimilarProducts({
     return () => {
       active = false;
     };
-  }, [currentProduct.id, currentProduct.categoryIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProduct.id, currentProduct.categoryIds?.[0]]);
 
   if (loading) {
     return (

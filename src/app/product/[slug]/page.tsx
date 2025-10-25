@@ -23,11 +23,13 @@ export async function generateMetadata({
       };
     }
 
+    const description = product.attributes?.description
+      ? String(product.attributes.description)
+      : `Купити ${product.title} в нашому інтернет-магазині книг`;
+
     return {
       title: `${product.title} | Онлайн-магазин книг`,
-      description:
-        product.attributes.description ||
-        `Купити ${product.title} в нашому інтернет-магазині книг`,
+      description,
       openGraph: {
         images: product.images?.[0] ? [product.images[0]] : [],
       },

@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
-import type { OrderDoc } from "@/lib/models/Order";
 import { OrderModel } from "@/lib/models/Order";
+import type { OrderDoc } from "@/types/database";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,7 +16,6 @@ export async function GET(
   const cookieStore = await cookies();
   if (cookieStore.get("admin_session")?.value !== "1") return unauthorized();
   await connectToDB();
-  // @ts-expect-error - mongoose типи складні для TypeScript
   const raw = await OrderModel.findById(id)
     .populate({
       path: "items.productId",
@@ -101,7 +100,6 @@ export async function PUT(
     if (body.status) updates.status = body.status;
     if (body.ttn !== undefined) updates.ttn = body.ttn;
     if (body.payment?.status) updates["payment.status"] = body.payment.status;
-    // @ts-expect-error - mongoose типи складні для TypeScript
     const updated = (await OrderModel.findByIdAndUpdate(
       id,
       { $set: updates },
@@ -128,7 +126,6 @@ export async function DELETE(
   const cookieStore = await cookies();
   if (cookieStore.get("admin_session")?.value !== "1") return unauthorized();
   await connectToDB();
-  // @ts-expect-error - mongoose типи складні для TypeScript
   const res = await OrderModel.findByIdAndDelete(id)
     .setOptions({ lean: true })
     .exec();

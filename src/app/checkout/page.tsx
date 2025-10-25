@@ -111,33 +111,24 @@ export default function CheckoutPage() {
       // Create order items from cart
       const items = Object.values(cart.items).map((item) => ({
         productId: item.productId,
-        title: item.title,
-        price: item.price,
-        quantity: item.qty,
-        image: item.image,
+        qty: item.qty,
       }));
 
       // Create order
       const order = await OrdersService.createOrder({
         customer: {
-          name: formData.name,
+          fullName: formData.name,
           email: formData.email,
           phone: formData.phone,
         },
-        shipping: {
+        delivery: {
+          carrier: "nova",
           address: formData.address,
-          city: formData.city,
-          postalCode: formData.postalCode,
-          country: "Ukraine",
         },
         payment: {
-          method: formData.paymentMethod,
+          provider: formData.paymentMethod as "fondy" | "liqpay" | "cod",
         },
         items,
-        subtotal,
-        shipping_fee: shippingFee,
-        total,
-        notes: formData.notes,
       });
 
       // Clear cart and redirect to confirmation page

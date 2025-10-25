@@ -45,17 +45,6 @@ const ProductSchema = new Schema<ProductDoc>(
   },
   {
     timestamps: true, // Add createdAt and updatedAt timestamps
-    // Create compound indexes for common query patterns
-    indexes: [
-      // Compound index for category + price sorting (common filter scenario)
-      { categoryIds: 1, price: 1 },
-      // Compound index for in-stock + price sorting
-      { stock: 1, price: 1 },
-      // Compound index for sale items + price sorting
-      { salePrice: 1, price: 1 },
-      // Text index for search functionality
-      { title: "text", "attributes.description": "text" },
-    ],
   },
 );
 
