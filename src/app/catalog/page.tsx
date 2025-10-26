@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import React from "react";
+import { Suspense } from "react";
 import { connectToDB } from "@/lib/db";
 import { ProductModel } from "@/lib/models/Product";
 import CatalogClient from "./CatalogClient";
@@ -29,17 +29,17 @@ export default async function CatalogPage() {
   const initialProductsCount = await getInitialProductsCount();
 
   return (
-    <React.Suspense fallback={<div>Завантаження каталогу...</div>}>
-      <div>
+    <div>
+      <Suspense fallback={<div>Завантаження каталогу...</div>}>
         <CatalogClient />
-        {/* This hidden div helps with SEO by providing initial data */}
-        <div
-          style={{ display: "none" }}
-          data-total-products={initialProductsCount}
-        >
-          Наш каталог містить {initialProductsCount} книг для вашого вибору.
-        </div>
+      </Suspense>
+      {/* This hidden div helps with SEO by providing initial data */}
+      <div
+        style={{ display: "none" }}
+        data-total-products={initialProductsCount}
+      >
+        Наш каталог містить {initialProductsCount} книг для вашого вибору.
       </div>
-    </React.Suspense>
+    </div>
   );
 }

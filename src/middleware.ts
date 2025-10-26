@@ -50,11 +50,28 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "origin-when-cross-origin");
   response.headers.set("X-Frame-Options", "SAMEORIGIN");
 
-  // Set CSP header
-  response.headers.set(
-    "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; font-src 'self'; connect-src 'self'",
-  );
+  // Set CSP header - разные настройки для dev и production
+  const isDev = process.env.NODE_ENV === "development";
+  const cspDirectives = [
+    "default-src 'self'",
+    // В dev режиме нужен unsafe-eval для React Fast Refresh
+    isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https://res.cloudinary.com https://picsum.photos",
+    "font-src 'self' data:",
+    // В dev режиме нужен webpack-hmr и localhost
+    isDev
+      ? "connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:*"
+      : "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+  ];
+
+  response.headers.set("Content-Security-Policy", cspDirectives.join("; "));
 
   // Set Permissions Policy
   response.headers.set(

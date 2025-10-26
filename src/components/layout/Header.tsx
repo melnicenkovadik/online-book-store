@@ -119,6 +119,7 @@ export default function Header() {
             </Link>
 
             <button
+              type="button"
               className={styles.mobileMenuButton}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-expanded={isMobileMenuOpen}
@@ -147,7 +148,7 @@ export default function Header() {
             <li className={styles.navItem}>
               <DropdownMenuRoot>
                 <DropdownMenuTrigger asChild>
-                  <button className={styles.navLink}>
+                  <button type="button" className={styles.navLink}>
                     Каталог <span className={styles.dropdownArrow}>▼</span>
                   </button>
                 </DropdownMenuTrigger>

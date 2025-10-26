@@ -45,6 +45,10 @@ export default function CatalogClient() {
     },
   );
 
+  console.log("[CatalogClient] filters:", filters);
+  console.log("[CatalogClient] filters.page:", filters.page);
+  console.log("[CatalogClient] filters.sort:", filters.sort);
+
   const debouncedQ = useDebounce(filters.q, 300);
 
   // React Query для products
@@ -84,14 +88,36 @@ export default function CatalogClient() {
     filters.coverType,
   ]);
 
+  console.log(
+    "[CatalogClient] About to call useQuery with productParams:",
+    productParams,
+  );
+
   const { data: productsData, isPending: productsLoading } = useQuery({
     queryKey: ["products", productParams],
-    queryFn: () => CatalogService.getProducts(productParams as any),
+    queryFn: () => {
+      console.log("[CatalogClient] queryFn CALLED!");
+      return CatalogService.getProducts(productParams as any);
+    },
   });
+
+  console.log(
+    "[CatalogClient] After useQuery - productsLoading:",
+    productsLoading,
+    "productsData:",
+    productsData,
+  );
 
   const products: Product[] = productsData?.items ?? [];
   const total = productsData?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / perPage));
+
+  // Стабільні ключі для скелетонів
+  const skeletonKeys = React.useMemo(
+    () =>
+      Array.from({ length: perPage }, (_, i) => `skeleton-${i}-${Date.now()}`),
+    [],
+  );
 
   // React Query для categories
   const { data: categories = [] } = useQuery<Category[]>({
@@ -399,7 +425,7 @@ export default function CatalogClient() {
       </div>
 
       {/* Active filter chips */}
-      <div className={styles.chips} role="region" aria-label="Активні фільтри">
+      <section className={styles.chips} aria-label="Активні фільтри">
         {filters.q && (
           <button
             type="button"
@@ -520,20 +546,20 @@ export default function CatalogClient() {
             сортування: {filters.sort} ×
           </button>
         )}
-      </div>
+      </section>
 
       {/* Loading skeleton */}
       {productsLoading && (
         <div className={styles.grid} aria-hidden>
-          {Array.from({ length: perPage }).map((_, i) => (
-            <div key={`skeleton-${i}`} className={styles.skeletonCard} />
+          {skeletonKeys.map((key) => (
+            <div key={key} className={styles.skeletonCard} />
           ))}
         </div>
       )}
 
       {/* Empty state */}
       {!productsLoading && products.length === 0 && (
-        <div className={styles.empty} role="status">
+        <output className={styles.empty}>
           <div className={styles.emptyTitle}>Нічого не знайдено</div>
           <div className={styles.emptyText}>
             Спробуйте змінити фільтри або скинути їх
@@ -541,24 +567,18 @@ export default function CatalogClient() {
           <Button variant="ghost" onClick={resetFilters}>
             Скинути фільтри
           </Button>
-        </div>
+        </output>
       )}
 
       {/* Products grid */}
       {!productsLoading && products.length > 0 && (
-        <div
-          className={styles.grid}
-          id="catalog-grid"
-          role="grid"
-          aria-label="Результати пошуку"
-        >
+        <div className={styles.grid} id="catalog-grid">
           {products.map((p) => (
             <a
               id={`catalog-card-${p.id}`}
               key={p.id}
               href={`/product/${p.slug}`}
               className={styles.card}
-              role="gridcell"
             >
               <div className={styles.cardImage}>
                 {p.images?.[0] ? (
@@ -599,10 +619,9 @@ export default function CatalogClient() {
 
       {/* Pagination */}
       {!productsLoading && products.length > 0 && pages > 1 && (
-        <div
+        <nav
           className={styles.pagination}
           id="catalog-pagination"
-          role="navigation"
           aria-label="Пагінація"
         >
           <Button
@@ -630,7 +649,7 @@ export default function CatalogClient() {
           >
             Далі
           </Button>
-        </div>
+        </nav>
       )}
     </div>
   );
