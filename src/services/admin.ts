@@ -2,7 +2,7 @@ import useSWR from "swr";
 import type { Category, Product } from "@/types/catalog";
 import type { Paginated } from "@/types/http";
 import type { Order } from "@/types/order";
-import { apiFetch } from "./http";
+import { adminApiFetch } from "./admin-http";
 
 export type AdminOrderListItem = Order;
 export type AdminOrderDetail = Order & {
@@ -41,39 +41,48 @@ export const AdminApi = {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== "") sp.set(k, String(v));
     });
-    return apiFetch<Paginated<Product>>({
+    return adminApiFetch<Paginated<Product>>({
       path: `/api/admin/products?${sp.toString()}`,
     });
   },
   getProduct: (id: string) =>
-    apiFetch<Product>({ path: `/api/admin/products/${id}` }),
+    adminApiFetch<Product>({ path: `/api/admin/products/${id}` }),
   createProduct: (body: Partial<Product>) =>
-    apiFetch<Product>({ path: "/api/admin/products", method: "POST", body }),
+    adminApiFetch<Product>({
+      path: "/api/admin/products",
+      method: "POST",
+      body,
+    }),
   updateProduct: (id: string, body: Partial<Product>) =>
-    apiFetch<Product>({
+    adminApiFetch<Product>({
       path: `/api/admin/products/${id}`,
       method: "PUT",
       body,
     }),
   deleteProduct: (id: string) =>
-    apiFetch<{ ok: boolean }>({
+    adminApiFetch<{ ok: boolean }>({
       path: `/api/admin/products/${id}`,
       method: "DELETE",
     }),
   // Categories
-  listCategories: () => apiFetch<Category[]>({ path: "/api/admin/categories" }),
+  listCategories: () =>
+    adminApiFetch<Category[]>({ path: "/api/admin/categories" }),
   getCategory: (id: string) =>
-    apiFetch<Category>({ path: `/api/admin/categories/${id}` }),
+    adminApiFetch<Category>({ path: `/api/admin/categories/${id}` }),
   createCategory: (body: Partial<Category>) =>
-    apiFetch<Category>({ path: "/api/admin/categories", method: "POST", body }),
+    adminApiFetch<Category>({
+      path: "/api/admin/categories",
+      method: "POST",
+      body,
+    }),
   updateCategory: (id: string, body: Partial<Category>) =>
-    apiFetch<Category>({
+    adminApiFetch<Category>({
       path: `/api/admin/categories/${id}`,
       method: "PUT",
       body,
     }),
   deleteCategory: (id: string) =>
-    apiFetch<{ ok: boolean }>({
+    adminApiFetch<{ ok: boolean }>({
       path: `/api/admin/categories/${id}`,
       method: "DELETE",
     }),
@@ -85,7 +94,7 @@ export const AdminApi = {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== "") sp.set(k, String(v));
     });
-    return apiFetch<{
+    return adminApiFetch<{
       items: AdminOrderListItem[];
       page: number;
       perPage: number;
@@ -93,7 +102,7 @@ export const AdminApi = {
     }>({ path: `/api/admin/orders?${sp.toString()}` });
   },
   getOrder: (id: string) =>
-    apiFetch<AdminOrderDetail>({ path: `/api/admin/orders/${id}` }),
+    adminApiFetch<AdminOrderDetail>({ path: `/api/admin/orders/${id}` }),
   updateOrder: (
     id: string,
     body: Partial<
@@ -102,7 +111,7 @@ export const AdminApi = {
       }
     >,
   ) =>
-    apiFetch<AdminOrderDetail>({
+    adminApiFetch<AdminOrderDetail>({
       path: `/api/admin/orders/${id}`,
       method: "PUT",
       body,
