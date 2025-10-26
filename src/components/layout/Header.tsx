@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -10,40 +11,33 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger,
 } from "@/components/uikit";
-import { CatalogService } from "@/services/catalog";
 import { useCart } from "@/store/cart";
 import type { Category } from "@/types/catalog";
 import styles from "./Header.module.scss";
 
 export default function Header() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const cart = useCart();
   const isAdmin = pathname.startsWith("/admin");
 
-  // Fetch categories
-  useEffect(() => {
-    CatalogService.getCategories()
-      .then(setCategories)
-      .catch((err) => console.error("Failed to load categories:", err));
-  }, []);
-
-  // Track scroll position for sticky header
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  // Завантаження категорій через React Query
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/catalog/categories");
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 хвилин
+    gcTime: 10 * 60 * 1000, // 10 хвилин
+  });
 
   // Close mobile menu when navigating
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is needed to trigger on navigation
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, []);
+  }, [pathname]);
 
   // Calculate cart items count
   const cartItemsCount = Object.values(cart.items).reduce(
@@ -52,7 +46,7 @@ export default function Header() {
   );
 
   return (
-    <header className={`${styles.header} ${isScrolled ? styles.sticky : ""}`}>
+    <header className={styles.header}>
       <div className={styles.topBar}>
         <div className={styles.container}>
           <div className={styles.contact}>

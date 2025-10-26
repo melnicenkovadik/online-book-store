@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
 import { QueryProvider } from "@/providers/QueryProvider";
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <NuqsAdapter>
           <QueryProvider>
+            <Header />
             <main>
               <div
                 style={{ maxWidth: 1480, margin: "0 auto", padding: "16px" }}

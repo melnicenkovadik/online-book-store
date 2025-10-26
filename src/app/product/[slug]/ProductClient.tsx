@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -17,28 +18,15 @@ interface ProductClientProps {
 
 export default function ProductClient({ initialProduct }: ProductClientProps) {
   const { slug } = useParams<{ slug: string }>();
-  const [product, setProduct] = React.useState<Product>(initialProduct);
-  const [loading, setLoading] = React.useState(false);
   const cart = useCart();
 
-  // Refresh data client-side to get the latest stock/price info
-  React.useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const p = await CatalogService.getProductBySlug(slug as string);
-        if (active) setProduct(p);
-      } catch (_e) {
-        // Keep using initial product data if refresh fails
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [slug]);
+  // Використовуємо React Query з initialData - без мерцання!
+  const { data: product = initialProduct } = useQuery({
+    queryKey: ["product", slug],
+    queryFn: () => CatalogService.getProductBySlug(slug as string),
+    initialData: initialProduct,
+    staleTime: 5 * 60 * 1000, // 5 хвилин
+  });
 
   // Gallery/lightbox state must be declared unconditionally before any early returns
   const [activeIdx, setActiveIdx] = React.useState(0);
@@ -169,13 +157,6 @@ export default function ProductClient({ initialProduct }: ProductClientProps) {
     a.click();
     a.remove();
   }, [images, activeIdx]);
-
-  if (loading)
-    return (
-      <div style={{ padding: 24 }} id="product-loading">
-        Завантаження…
-      </div>
-    );
 
   const inCart = cart.items[product.id];
   const price = product.salePrice ?? product.price;

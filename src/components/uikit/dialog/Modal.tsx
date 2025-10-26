@@ -3,6 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import type React from "react";
+import { useEffect, useState } from "react";
 import { cn } from "../utils/cn";
 import styles from "./Modal.module.scss";
 
@@ -23,8 +24,16 @@ export function ModalContent({
   id?: string;
   className?: string;
 } & Omit<React.ComponentProps<typeof Dialog.Content>, "className">) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
-    <Dialog.Portal>
+    <Dialog.Portal container={document.body}>
       <Dialog.Overlay className={styles.overlay} />
       <Dialog.Content
         id={id}

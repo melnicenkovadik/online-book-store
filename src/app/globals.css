@@ -354,3 +354,12 @@ p {
     display: none;
   }
 }
+
+body {
+  button,
+  a,
+  input,
+  select {
+    cursor: pointer;
+  }
+}
