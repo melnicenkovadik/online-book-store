@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/uikit";
 import { clientLogger } from "@/lib/client-logger";
+import {
+  calculateDeliveryCost,
+  getWarehouses,
+  type NovaPoshtaCity,
+  type NovaPoshtaWarehouse,
+  searchCities,
+} from "@/services/novaposhta";
 import { OrdersService } from "@/services/orders";
 import { useCart } from "@/store/cart";
 import styles from "./checkout.module.scss";
@@ -16,8 +23,10 @@ type FormData = {
   phone: string;
   address: string;
   city: string;
-  postalCode: string;
-  paymentMethod: "cod" | "card";
+  cityRef: string;
+  warehouse: string;
+  warehouseRef: string;
+  paymentMethod: "cod" | "requisites";
   notes: string;
 };
 
@@ -30,17 +39,35 @@ export default function CheckoutPage() {
   const cart = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    postalCode: "",
+    name: "Имя Фамилия",
+    email: "email@example.com",
+    phone: "+380991234567",
+    address: "Адрес доставки",
+    city: "Город",
+    cityRef: "city_1234567890",
+    warehouse: "Відділення №1",
+    warehouseRef: "warehouse_1234567890",
     paymentMethod: "cod",
-    notes: "",
+    notes: "Примітка до замовлення",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [step, setStep] = useState<"cart" | "shipping" | "payment">("cart");
+
+  // Нова Пошта інтеграція
+  const [cities, setCities] = useState<NovaPoshtaCity[]>([]);
+  const [warehouses, setWarehouses] = useState<NovaPoshtaWarehouse[]>([]);
+  const [showCities, setShowCities] = useState(false);
+  const [showWarehouses, setShowWarehouses] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [deliveryCost, setDeliveryCost] = useState(0);
+
+  // Calculate order totals
+  const subtotal = Object.values(cart.items).reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0,
+  );
+  const shippingFee = deliveryCost;
+  const total = subtotal + shippingFee;
 
   // Redirect to home if cart is empty
   useEffect(() => {
@@ -49,13 +76,46 @@ export default function CheckoutPage() {
     }
   }, [cart.items, router]);
 
-  // Calculate order totals
-  const subtotal = Object.values(cart.items).reduce(
-    (sum, item) => sum + item.price * item.qty,
-    0,
-  );
-  const shippingFee = subtotal >= 1500 ? 0 : 100;
-  const total = subtotal + shippingFee;
+  // Пошук міст при введенні
+  useEffect(() => {
+    const performCitySearch = async () => {
+      console.log("🔍 Searching cities for:", citySearch);
+      if (citySearch.length >= 2) {
+        const results = await searchCities(citySearch);
+        console.log("📍 Cities found:", results);
+        setCities(results);
+      } else {
+        setCities([]);
+      }
+    };
+
+    const timeoutId = setTimeout(performCitySearch, 300);
+    return () => clearTimeout(timeoutId);
+  }, [citySearch]);
+
+  // Завантаження відділень при виборі міста
+  useEffect(() => {
+    const loadWarehouses = async () => {
+      if (formData.cityRef) {
+        const wh = await getWarehouses(formData.cityRef);
+        setWarehouses(wh);
+      }
+    };
+
+    loadWarehouses();
+  }, [formData.cityRef]);
+
+  // Розрахунок вартості доставки
+  useEffect(() => {
+    const calculateCost = async () => {
+      if (formData.cityRef && subtotal > 0) {
+        const cost = await calculateDeliveryCost(formData.cityRef, 1, subtotal);
+        setDeliveryCost(cost);
+      }
+    };
+
+    calculateCost();
+  }, [formData.cityRef, subtotal]);
 
   // Handle form input changes
   const handleChange = (
@@ -80,8 +140,10 @@ export default function CheckoutPage() {
     if (!formData.name.trim()) newErrors.name = "Ім'я обов'язкове";
     if (!formData.email.trim()) newErrors.email = "Email обов'язковий";
     if (!formData.phone.trim()) newErrors.phone = "Телефон обов'язковий";
-    if (!formData.address.trim()) newErrors.address = "Адреса обов'язкова";
-    if (!formData.city.trim()) newErrors.city = "Місто обов'язкове";
+    if (!formData.city || !formData.cityRef)
+      newErrors.city = "Оберіть місто зі списку";
+    if (!formData.warehouse || !formData.warehouseRef)
+      newErrors.address = "Оберіть відділення зі списку";
 
     // Email format
     if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
@@ -112,24 +174,35 @@ export default function CheckoutPage() {
       const items = Object.values(cart.items).map((item) => ({
         productId: item.productId,
         qty: item.qty,
+        title: item.title,
+        price: item.price,
+        image: item.image,
       }));
 
-      // Create order
-      const order = await OrdersService.createOrder({
+      // Create order payload
+      const orderPayload = {
         customer: {
           fullName: formData.name,
           email: formData.email,
           phone: formData.phone,
         },
         delivery: {
-          carrier: "nova",
+          carrier: "nova" as const,
+          city: formData.city,
+          cityRef: formData.cityRef,
+          warehouse: formData.warehouse,
+          warehouseRef: formData.warehouseRef,
           address: formData.address,
         },
         payment: {
-          provider: formData.paymentMethod as "fondy" | "liqpay" | "cod",
+          provider: formData.paymentMethod,
         },
         items,
-      });
+        notes: formData.notes,
+      };
+
+      // Create order
+      const order = await OrdersService.createOrder(orderPayload);
 
       // Clear cart and redirect to confirmation page
       cart.clear();
@@ -152,8 +225,10 @@ export default function CheckoutPage() {
         formData.name &&
         formData.email &&
         formData.phone &&
-        formData.address &&
-        formData.city
+        formData.city &&
+        formData.cityRef &&
+        formData.warehouse &&
+        formData.warehouseRef
       ) {
         setStep("payment");
       } else {
@@ -340,59 +415,106 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label htmlFor="address" className={styles.label}>
-                    Адреса <span className={styles.required}>*</span>
+                  <label htmlFor="city" className={styles.label}>
+                    Місто Нової Пошти <span className={styles.required}>*</span>
                   </label>
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    className={
-                      errors.address ? styles.inputError : styles.input
-                    }
-                    placeholder="Введіть адресу доставки"
-                  />
-                  {errors.address && (
-                    <div className={styles.errorText}>{errors.address}</div>
-                  )}
-                </div>
-
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="city" className={styles.label}>
-                      Місто <span className={styles.required}>*</span>
-                    </label>
+                  <div className={styles.autocompleteWrapper}>
                     <input
                       type="text"
                       id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
+                      value={citySearch}
+                      onChange={(e) => {
+                        setCitySearch(e.target.value);
+                        setShowCities(true);
+                      }}
+                      onFocus={() => setShowCities(true)}
                       className={errors.city ? styles.inputError : styles.input}
-                      placeholder="Введіть місто"
+                      placeholder="Почніть вводити назву міста..."
                     />
-                    {errors.city && (
-                      <div className={styles.errorText}>{errors.city}</div>
+                    {showCities && cities.length > 0 && (
+                      <div className={styles.autocompleteList}>
+                        {cities.map((city) => (
+                          <button
+                            key={city.ref}
+                            type="button"
+                            className={styles.autocompleteItem}
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                city: city.name,
+                                cityRef: city.ref,
+                                warehouse: "",
+                                warehouseRef: "",
+                                address: "",
+                              }));
+                              setCitySearch(city.name);
+                              setShowCities(false);
+                            }}
+                          >
+                            <div className={styles.cityName}>{city.name}</div>
+                            <div className={styles.cityArea}>{city.area}</div>
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
-
-                  <div className={styles.formGroup}>
-                    <label htmlFor="postalCode" className={styles.label}>
-                      Поштовий індекс
-                    </label>
-                    <input
-                      type="text"
-                      id="postalCode"
-                      name="postalCode"
-                      value={formData.postalCode}
-                      onChange={handleChange}
-                      className={styles.input}
-                      placeholder="Введіть поштовий індекс"
-                    />
-                  </div>
+                  {errors.city && (
+                    <div className={styles.errorText}>{errors.city}</div>
+                  )}
                 </div>
+
+                {formData.cityRef && (
+                  <div className={styles.formGroup}>
+                    <label htmlFor="warehouse" className={styles.label}>
+                      Відділення Нової Пошти{" "}
+                      <span className={styles.required}>*</span>
+                    </label>
+                    <div className={styles.autocompleteWrapper}>
+                      <input
+                        type="text"
+                        id="warehouse"
+                        value={formData.warehouse}
+                        onChange={(e) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            warehouse: e.target.value,
+                          }));
+                          setShowWarehouses(true);
+                        }}
+                        onFocus={() => setShowWarehouses(true)}
+                        className={
+                          errors.address ? styles.inputError : styles.input
+                        }
+                        placeholder="Виберіть відділення..."
+                      />
+                      {showWarehouses && warehouses.length > 0 && (
+                        <div className={styles.autocompleteList}>
+                          {warehouses.map((wh) => (
+                            <button
+                              key={wh.ref}
+                              type="button"
+                              className={styles.autocompleteItem}
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  warehouse: wh.description,
+                                  warehouseRef: wh.ref,
+                                  address: wh.description,
+                                }));
+                                setShowWarehouses(false);
+                              }}
+                            >
+                              {wh.description}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {errors.address && (
+                      <div className={styles.errorText}>{errors.address}</div>
+                    )}
+                  </div>
+                )}
 
                 <div className={styles.formActions}>
                   <Button variant="ghost" onClick={goToPrevStep}>
@@ -431,20 +553,51 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="card"
-                      checked={formData.paymentMethod === "card"}
+                      value="requisites"
+                      checked={formData.paymentMethod === "requisites"}
                       onChange={handleChange}
                     />
                     <div className={styles.paymentOptionContent}>
                       <div className={styles.paymentOptionTitle}>
-                        Оплата карткою онлайн
+                        Оплата за реквізитами
                       </div>
                       <div className={styles.paymentOptionDesc}>
-                        Безпечна оплата через платіжну систему
+                        Після оформлення замовлення ми надішлемо вам реквізити
+                        для оплати
                       </div>
                     </div>
                   </label>
                 </div>
+
+                {formData.paymentMethod === "requisites" && (
+                  <div className={styles.requisitesInfo}>
+                    <h3 className={styles.requisitesTitle}>
+                      Реквізити для оплати:
+                    </h3>
+                    <div className={styles.requisitesDetails}>
+                      <p>
+                        <strong>Отримувач:</strong> ФОП Іваненко Іван Іванович
+                      </p>
+                      <p>
+                        <strong>ЄДРПОУ:</strong> 1234567890
+                      </p>
+                      <p>
+                        <strong>Банк:</strong> ПриватБанк
+                      </p>
+                      <p>
+                        <strong>IBAN:</strong> UA123456789012345678901234567
+                      </p>
+                      <p>
+                        <strong>Призначення платежу:</strong> Оплата за
+                        замовлення №[буде вказано після оформлення]
+                      </p>
+                    </div>
+                    <p className={styles.requisitesNote}>
+                      ⚠️ Замовлення буде відправлено після надходження коштів на
+                      рахунок (зазвичай 1-2 робочих дні).
+                    </p>
+                  </div>
+                )}
 
                 <div className={styles.formGroup}>
                   <label htmlFor="notes" className={styles.label}>
@@ -490,6 +643,28 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
+
+          {/* Інформація про доставку */}
+          {step !== "cart" && formData.city && (
+            <div className={styles.summaryDelivery}>
+              <h3 className={styles.summarySubtitle}>Доставка</h3>
+              <div className={styles.deliveryInfo}>
+                <div className={styles.deliveryRow}>
+                  <strong>Перевізник:</strong> Нова Пошта
+                </div>
+                {formData.city && (
+                  <div className={styles.deliveryRow}>
+                    <strong>Місто:</strong> {formData.city}
+                  </div>
+                )}
+                {formData.warehouse && (
+                  <div className={styles.deliveryRow}>
+                    <strong>Відділення:</strong> {formData.warehouse}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className={styles.summaryTotals}>
             <div className={styles.summaryRow}>

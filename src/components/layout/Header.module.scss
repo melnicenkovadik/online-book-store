@@ -39,9 +39,9 @@
 }
 
 .topBar {
-  background-color: var(--color-background-dark);
-  padding: var(--spacing-2) 0;
-  font-size: var(--font-size-sm);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 10px 0;
+  font-size: 13px;
   display: none;
   
   @media (min-width: 768px) {
@@ -55,36 +55,56 @@
 
 .contact {
   display: flex;
-  gap: var(--spacing-4);
+  gap: 24px;
+  align-items: center;
 }
 
 .contactLink {
   display: flex;
   align-items: center;
-  gap: var(--spacing-1);
-  color: var(--color-text-light);
-  transition: color var(--transition-fast);
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.95);
+  transition: all 0.2s;
+  text-decoration: none;
+  font-weight: 500;
   
   &:hover {
-    color: var(--color-primary);
+    color: white;
+    transform: translateY(-1px);
   }
 }
 
 .contactIcon {
-  font-size: var(--font-size-base);
+  font-size: 16px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.contactText {
+  @media (max-width: 1024px) {
+    display: none;
+  }
 }
 
 .actions {
   display: flex;
-  gap: var(--spacing-4);
+  gap: 20px;
+  align-items: center;
 }
 
 .actionLink {
-  color: var(--color-text-light);
-  transition: color var(--transition-fast);
+  color: rgba(255, 255, 255, 0.95);
+  transition: all 0.2s;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 6px;
   
   &:hover {
-    color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
   }
 }
 
@@ -243,14 +263,18 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  align-items: center;
   
   @media (max-width: 767px) {
     flex-direction: column;
+    align-items: stretch;
   }
 }
 
 .navItem {
   position: relative;
+  display: flex;
+  align-items: center;
   
   @media (max-width: 767px) {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -264,28 +288,42 @@
 .navLink {
   display: flex;
   align-items: center;
-  padding: var(--spacing-3) var(--spacing-4);
+  justify-content: center;
+  padding: 14px 20px;
   color: white;
   font-weight: 500;
-  transition: background-color var(--transition-fast);
+  transition: background-color 0.2s;
   cursor: pointer;
   background: none;
   border: none;
-  font-size: inherit;
+  font-size: 15px;
+  text-decoration: none;
+  height: 100%;
   
   &:hover, &.active {
     background-color: var(--color-primary-dark);
   }
   
   &.saleLink {
-    color: var(--color-accent-light);
-    font-weight: 700;
+    color: #fcd34d;
+    font-weight: 600;
+    
+    &:hover {
+      color: #fbbf24;
+    }
+  }
+
+  @media (max-width: 767px) {
+    justify-content: flex-start;
+    padding: 16px 20px;
   }
 }
 
 .dropdownArrow {
-  font-size: var(--font-size-xs);
-  margin-left: var(--spacing-1);
+  font-size: 10px;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .dropdownLink {

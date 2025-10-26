@@ -21,6 +21,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const cart = useCart();
+  const isAdmin = pathname.startsWith("/admin");
 
   // Fetch categories
   useEffect(() => {
@@ -131,62 +132,64 @@ export default function Header() {
         </div>
       </div>
 
-      <nav
-        className={`${styles.nav} ${isMobileMenuOpen ? styles.navOpen : ""}`}
-        aria-label="Головна навігація"
-      >
-        <div className={styles.container}>
-          <ul className={styles.navList}>
-            <li className={styles.navItem}>
-              <Link
-                href="/"
-                className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
-              >
-                Головна
-              </Link>
-            </li>
-            <li className={styles.navItem}>
-              <DropdownMenuRoot>
-                <DropdownMenuTrigger asChild>
-                  <button type="button" className={styles.navLink}>
-                    Каталог <span className={styles.dropdownArrow}>▼</span>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem asChild>
-                    <Link href="/catalog" className={styles.dropdownLink}>
-                      Всі книги
-                    </Link>
-                  </DropdownMenuItem>
-                  {categories.map((category) => (
-                    <DropdownMenuItem key={category.id} asChild>
-                      <Link
-                        href={`/catalog?categoryId=${category.id}`}
-                        className={styles.dropdownLink}
-                      >
-                        {category.name}
+      {!isAdmin ? (
+        <nav
+          className={`${styles.nav} ${isMobileMenuOpen ? styles.navOpen : ""}`}
+          aria-label="Головна навігація"
+        >
+          <div className={styles.container}>
+            <ul className={styles.navList}>
+              <li className={styles.navItem}>
+                <Link
+                  href="/"
+                  className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
+                >
+                  Головна
+                </Link>
+              </li>
+              <li className={styles.navItem}>
+                <DropdownMenuRoot>
+                  <DropdownMenuTrigger asChild>
+                    <button type="button" className={styles.navLink}>
+                      Каталог <span className={styles.dropdownArrow}>▼</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem asChild>
+                      <Link href="/catalog" className={styles.dropdownLink}>
+                        Всі книги
                       </Link>
                     </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenuRoot>
-            </li>
-            <li className={styles.navItem}>
-              <Link
-                href="/catalog?onSale=true"
-                className={`${styles.navLink} ${styles.saleLink}`}
-              >
-                Акції
-              </Link>
-            </li>
-            <li className={styles.navItem}>
-              <Link href="/catalog?sort=newest" className={styles.navLink}>
-                Новинки
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </nav>
+                    {categories.map((category) => (
+                      <DropdownMenuItem key={category.id} asChild>
+                        <Link
+                          href={`/catalog?categoryId=${category.id}`}
+                          className={styles.dropdownLink}
+                        >
+                          {category.name}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenuRoot>
+              </li>
+              <li className={styles.navItem}>
+                <Link
+                  href="/catalog?onSale=true"
+                  className={`${styles.navLink} ${styles.saleLink}`}
+                >
+                  Акції
+                </Link>
+              </li>
+              <li className={styles.navItem}>
+                <Link href="/catalog?sort=newest" className={styles.navLink}>
+                  Новинки
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      ) : null}
     </header>
   );
 }

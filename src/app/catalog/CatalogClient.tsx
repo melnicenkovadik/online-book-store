@@ -1,11 +1,14 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import React from "react";
 import OptimizedImage from "@/components/OptimizedImage";
 import {
   Button,
+  ModalContent,
+  ModalRoot,
+  ModalTrigger,
   SelectContent,
   SelectItem,
   SelectRoot,
@@ -19,14 +22,13 @@ import type { Category, Product } from "@/types/catalog";
 import styles from "./Catalog.module.scss";
 
 export default function CatalogClient() {
-  const perPage = 12;
+  const perPage = 20;
 
   // Використовуємо nuqs для синхронізації URL state
   const [filters, setFilters] = useQueryStates(
     {
       q: parseAsString.withDefault(""),
       categoryId: parseAsString,
-      page: parseAsInteger.withDefault(1),
       priceMin: parseAsInteger,
       priceMax: parseAsInteger,
       inStock: parseAsString,
@@ -45,16 +47,11 @@ export default function CatalogClient() {
     },
   );
 
-  console.log("[CatalogClient] filters:", filters);
-  console.log("[CatalogClient] filters.page:", filters.page);
-  console.log("[CatalogClient] filters.sort:", filters.sort);
-
   const debouncedQ = useDebounce(filters.q, 300);
 
-  // React Query для products
+  // React Query для products з бесконечною підгрузкою
   const productParams = React.useMemo(() => {
     const params: Record<string, unknown> = {
-      page: filters.page,
       perPage,
       sort: filters.sort,
     };
@@ -75,7 +72,6 @@ export default function CatalogClient() {
   }, [
     debouncedQ,
     filters.categoryId,
-    filters.page,
     filters.sort,
     filters.priceMin,
     filters.priceMax,
@@ -88,29 +84,34 @@ export default function CatalogClient() {
     filters.coverType,
   ]);
 
-  console.log(
-    "[CatalogClient] About to call useQuery with productParams:",
-    productParams,
-  );
-
-  const { data: productsData, isPending: productsLoading } = useQuery({
+  const {
+    data: productsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending: productsLoading,
+  } = useInfiniteQuery({
     queryKey: ["products", productParams],
-    queryFn: () => {
-      console.log("[CatalogClient] queryFn CALLED!");
-      return CatalogService.getProducts(productParams as any);
+    queryFn: ({ pageParam = 1 }) => {
+      return CatalogService.getProducts({
+        ...productParams,
+        page: pageParam,
+      } as any);
     },
+    getNextPageParam: (lastPage, pages) => {
+      const totalPages = Math.ceil(lastPage.total / perPage);
+      const nextPage = pages.length + 1;
+      return nextPage <= totalPages ? nextPage : undefined;
+    },
+    initialPageParam: 1,
   });
 
-  console.log(
-    "[CatalogClient] After useQuery - productsLoading:",
-    productsLoading,
-    "productsData:",
-    productsData,
-  );
+  // Обєднуємо всі продукти з усіх сторінок
+  const products: Product[] = React.useMemo(() => {
+    return productsData?.pages.flatMap((page) => page.items) ?? [];
+  }, [productsData]);
 
-  const products: Product[] = productsData?.items ?? [];
-  const total = productsData?.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / perPage));
+  const total = productsData?.pages[0]?.total ?? 0;
 
   // Стабільні ключі для скелетонів
   const skeletonKeys = React.useMemo(
@@ -118,6 +119,26 @@ export default function CatalogClient() {
       Array.from({ length: perPage }, (_, i) => `skeleton-${i}-${Date.now()}`),
     [],
   );
+
+  // IntersectionObserver для автопідгрузки
+  const loadMoreRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // React Query для categories
   const { data: categories = [] } = useQuery<Category[]>({
@@ -161,11 +182,6 @@ export default function CatalogClient() {
   // Хелпер для оновлення фільтрів
   const updateFilter = React.useCallback(
     (updates: Partial<typeof filters>) => {
-      // Автоматично скидаємо сторінку на 1, якщо це не зміна сторінки
-      if (!("page" in updates)) {
-        updates.page = 1;
-      }
-
       setFilters(updates);
     },
     [setFilters],
@@ -176,7 +192,6 @@ export default function CatalogClient() {
     setFilters({
       q: "",
       categoryId: null,
-      page: 1,
       priceMin: null,
       priceMax: null,
       inStock: null,
@@ -190,206 +205,311 @@ export default function CatalogClient() {
     });
   }, [setFilters]);
 
+  // Підраховуємо активні фільтри
+  const activeFiltersCount = React.useMemo(() => {
+    let count = 0;
+    if (filters.categoryId) count++;
+    if (filters.priceMin != null || filters.priceMax != null) count++;
+    if (filters.inStock === "true") count++;
+    if (filters.onSale === "true") count++;
+    if (filters.year) count++;
+    if (filters.author) count++;
+    if (filters.publisher) count++;
+    if (filters.language) count++;
+    if (filters.coverType) count++;
+    return count;
+  }, [
+    filters.categoryId,
+    filters.priceMin,
+    filters.priceMax,
+    filters.inStock,
+    filters.onSale,
+    filters.year,
+    filters.author,
+    filters.publisher,
+    filters.language,
+    filters.coverType,
+  ]);
+
+  const [isFiltersOpen, setIsFiltersOpen] = React.useState(false);
+
   return (
     <div className={styles.page} id="catalog-page">
-      <h1 id="catalog-title">Каталог</h1>
+      <div className={styles.header}>
+        <h1 id="catalog-title">Каталог</h1>
+        <div className={styles.headerStats}>
+          Знайдено: <strong>{total}</strong> {total === 1 ? "товар" : "товарів"}
+        </div>
+      </div>
 
-      <div className={styles.controls}>
+      <div className={styles.toolbar}>
         <input
           id="catalog-search"
-          placeholder="Пошук…"
+          placeholder="Пошук книг..."
           value={filters.q}
           onChange={(e) => updateFilter({ q: e.target.value })}
           className={styles.searchInput}
           aria-label="Пошук товарів"
         />
 
-        <SelectRoot
-          value={filters.categoryId ?? "all"}
-          onValueChange={(v) =>
-            updateFilter({ categoryId: v === "all" ? null : v })
-          }
-        >
-          <SelectTrigger
-            id="catalog-category-trigger"
-            className={styles.selectTrigger}
-            aria-label="Вибрати категорію"
+        <ModalRoot open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+          <ModalTrigger asChild>
+            <Button variant="ghost" className={styles.filterButton}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                role="img"
+                aria-label="Фільтри"
+              >
+                <title>Фільтри</title>
+                <path
+                  d="M2.5 5H17.5M5 10H15M7.5 15H12.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              Фільтри
+              {activeFiltersCount > 0 && (
+                <span className={styles.filterBadge}>{activeFiltersCount}</span>
+              )}
+            </Button>
+          </ModalTrigger>
+          <ModalContent
+            title="Фільтри"
+            className={styles.filtersModal ?? ""}
+            id="catalog-filters-modal"
           >
-            <SelectValue placeholder="Усі категорії" />
-          </SelectTrigger>
-          <SelectContent id="catalog-category-content">
-            <SelectItem id="catalog-category-all" value="all">
-              Усі
-            </SelectItem>
-            {categories.map((c) => {
-              const count = facets?.categories?.[c.id] ?? 0;
-              return (
-                <SelectItem
-                  id={`catalog-category-${c.id}`}
-                  key={c.id}
-                  value={c.id}
+            <div className={styles.filtersGrid}>
+              {/* Категорія */}
+              <div className={styles.filterGroup}>
+                <div className={styles.filterLabel}>Категорія</div>
+                <SelectRoot
+                  value={filters.categoryId ?? "all"}
+                  onValueChange={(v) =>
+                    updateFilter({ categoryId: v === "all" ? null : v })
+                  }
                 >
-                  {c.name} {count ? `(${count})` : ""}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </SelectRoot>
+                  <SelectTrigger
+                    id="catalog-category-trigger"
+                    className={styles.selectTrigger}
+                  >
+                    <SelectValue placeholder="Усі категорії" />
+                  </SelectTrigger>
+                  <SelectContent id="catalog-category-content">
+                    <SelectItem id="catalog-category-all" value="all">
+                      Усі категорії
+                    </SelectItem>
+                    {categories.map((c) => {
+                      const count = facets?.categories?.[c.id] ?? 0;
+                      return (
+                        <SelectItem
+                          id={`catalog-category-${c.id}`}
+                          key={c.id}
+                          value={c.id}
+                        >
+                          {c.name} {count ? `(${count})` : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </SelectRoot>
+              </div>
 
-        <Slider
-          min={0}
-          max={1000}
-          value={
-            [filters.priceMin ?? 0, filters.priceMax ?? 1000] as [
-              number,
-              number,
-            ]
-          }
-          onChange={([lo, hi]) =>
-            updateFilter({ priceMin: lo || null, priceMax: hi || null })
-          }
-          aria-label="Діапазон ціни"
-        />
+              {/* Ціна */}
+              <div className={styles.filterGroup}>
+                <div className={styles.filterLabel}>
+                  Ціна: {filters.priceMin ?? 0} ₴ - {filters.priceMax ?? 1000} ₴
+                </div>
+                <Slider
+                  min={0}
+                  max={1000}
+                  value={
+                    [filters.priceMin ?? 0, filters.priceMax ?? 1000] as [
+                      number,
+                      number,
+                    ]
+                  }
+                  onChange={([lo, hi]) =>
+                    updateFilter({ priceMin: lo || null, priceMax: hi || null })
+                  }
+                  aria-label="Діапазон ціни"
+                />
+              </div>
 
-        {/* Новий фільтр: Рік */}
-        {facets?.years && facets.years.length > 0 && (
-          <SelectRoot
-            value={filters.year?.toString() ?? "all"}
-            onValueChange={(v) =>
-              updateFilter({ year: v === "all" ? null : Number(v) })
-            }
-          >
-            <SelectTrigger className={styles.selectTrigger} aria-label="Рік">
-              <SelectValue placeholder="Всі роки" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Всі роки</SelectItem>
-              {facets.years.map((y) => (
-                <SelectItem key={y.year} value={y.year.toString()}>
-                  {y.year} ({y.count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </SelectRoot>
-        )}
+              {/* Рік */}
+              {facets?.years && facets.years.length > 0 && (
+                <div className={styles.filterGroup}>
+                  <div className={styles.filterLabel}>Рік видання</div>
+                  <SelectRoot
+                    value={filters.year?.toString() ?? "all"}
+                    onValueChange={(v) =>
+                      updateFilter({ year: v === "all" ? null : Number(v) })
+                    }
+                  >
+                    <SelectTrigger className={styles.selectTrigger}>
+                      <SelectValue placeholder="Всі роки" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Всі роки</SelectItem>
+                      {facets.years.map((y) => (
+                        <SelectItem key={y.year} value={y.year.toString()}>
+                          {y.year} ({y.count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </div>
+              )}
 
-        {/* Новий фільтр: Автор */}
-        {facets?.authors && facets.authors.length > 0 && (
-          <SelectRoot
-            value={filters.author ?? "all"}
-            onValueChange={(v) =>
-              updateFilter({ author: v === "all" ? null : v })
-            }
-          >
-            <SelectTrigger className={styles.selectTrigger} aria-label="Автор">
-              <SelectValue placeholder="Всі автори" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Всі автори</SelectItem>
-              {facets.authors.slice(0, 20).map((a) => (
-                <SelectItem key={a.author} value={a.author}>
-                  {a.author} ({a.count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </SelectRoot>
-        )}
+              {/* Автор */}
+              {facets?.authors && facets.authors.length > 0 && (
+                <div className={styles.filterGroup}>
+                  <div className={styles.filterLabel}>Автор</div>
+                  <SelectRoot
+                    value={filters.author ?? "all"}
+                    onValueChange={(v) =>
+                      updateFilter({ author: v === "all" ? null : v })
+                    }
+                  >
+                    <SelectTrigger className={styles.selectTrigger}>
+                      <SelectValue placeholder="Всі автори" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Всі автори</SelectItem>
+                      {facets.authors.slice(0, 20).map((a) => (
+                        <SelectItem key={a.author} value={a.author}>
+                          {a.author} ({a.count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </div>
+              )}
 
-        {/* Новий фільтр: Видавець */}
-        {facets?.publishers && facets.publishers.length > 0 && (
-          <SelectRoot
-            value={filters.publisher ?? "all"}
-            onValueChange={(v) =>
-              updateFilter({ publisher: v === "all" ? null : v })
-            }
-          >
-            <SelectTrigger
-              className={styles.selectTrigger}
-              aria-label="Видавець"
-            >
-              <SelectValue placeholder="Всі видавці" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Всі видавці</SelectItem>
-              {facets.publishers.slice(0, 20).map((p) => (
-                <SelectItem key={p.publisher} value={p.publisher}>
-                  {p.publisher} ({p.count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </SelectRoot>
-        )}
+              {/* Видавець */}
+              {facets?.publishers && facets.publishers.length > 0 && (
+                <div className={styles.filterGroup}>
+                  <div className={styles.filterLabel}>Видавець</div>
+                  <SelectRoot
+                    value={filters.publisher ?? "all"}
+                    onValueChange={(v) =>
+                      updateFilter({ publisher: v === "all" ? null : v })
+                    }
+                  >
+                    <SelectTrigger className={styles.selectTrigger}>
+                      <SelectValue placeholder="Всі видавці" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Всі видавці</SelectItem>
+                      {facets.publishers.slice(0, 20).map((p) => (
+                        <SelectItem key={p.publisher} value={p.publisher}>
+                          {p.publisher} ({p.count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </div>
+              )}
 
-        {/* Новий фільтр: Мова */}
-        {facets?.languages && facets.languages.length > 0 && (
-          <SelectRoot
-            value={filters.language ?? "all"}
-            onValueChange={(v) =>
-              updateFilter({ language: v === "all" ? null : v })
-            }
-          >
-            <SelectTrigger className={styles.selectTrigger} aria-label="Мова">
-              <SelectValue placeholder="Всі мови" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Всі мови</SelectItem>
-              {facets.languages.map((l) => (
-                <SelectItem key={l.language} value={l.language}>
-                  {l.language} ({l.count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </SelectRoot>
-        )}
+              {/* Мова */}
+              {facets?.languages && facets.languages.length > 0 && (
+                <div className={styles.filterGroup}>
+                  <div className={styles.filterLabel}>Мова</div>
+                  <SelectRoot
+                    value={filters.language ?? "all"}
+                    onValueChange={(v) =>
+                      updateFilter({ language: v === "all" ? null : v })
+                    }
+                  >
+                    <SelectTrigger className={styles.selectTrigger}>
+                      <SelectValue placeholder="Всі мови" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Всі мови</SelectItem>
+                      {facets.languages.map((l) => (
+                        <SelectItem key={l.language} value={l.language}>
+                          {l.language} ({l.count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </div>
+              )}
 
-        {/* Новий фільтр: Тип обкладинки */}
-        {facets?.coverTypes && facets.coverTypes.length > 0 && (
-          <SelectRoot
-            value={filters.coverType ?? "all"}
-            onValueChange={(v) =>
-              updateFilter({ coverType: v === "all" ? null : v })
-            }
-          >
-            <SelectTrigger
-              className={styles.selectTrigger}
-              aria-label="Тип обкладинки"
-            >
-              <SelectValue placeholder="Всі типи" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Всі типи</SelectItem>
-              {facets.coverTypes.map((ct) => (
-                <SelectItem key={ct.coverType} value={ct.coverType}>
-                  {ct.coverType} ({ct.count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </SelectRoot>
-        )}
+              {/* Тип обкладинки */}
+              {facets?.coverTypes && facets.coverTypes.length > 0 && (
+                <div className={styles.filterGroup}>
+                  <div className={styles.filterLabel}>Тип обкладинки</div>
+                  <SelectRoot
+                    value={filters.coverType ?? "all"}
+                    onValueChange={(v) =>
+                      updateFilter({ coverType: v === "all" ? null : v })
+                    }
+                  >
+                    <SelectTrigger className={styles.selectTrigger}>
+                      <SelectValue placeholder="Всі типи" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Всі типи</SelectItem>
+                      {facets.coverTypes.map((ct) => (
+                        <SelectItem key={ct.coverType} value={ct.coverType}>
+                          {ct.coverType} ({ct.count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </div>
+              )}
 
-        <label className={styles.checkbox}>
-          <input
-            type="checkbox"
-            checked={filters.inStock === "true"}
-            onChange={(e) =>
-              updateFilter({ inStock: e.target.checked ? "true" : null })
-            }
-            aria-label="Показати тільки товари в наявності"
-          />{" "}
-          В наявності
-        </label>
+              {/* Чекбокси */}
+              <div className={styles.filterGroup}>
+                <div className={styles.filterLabel}>Додатково</div>
+                <div className={styles.checkboxes}>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={filters.inStock === "true"}
+                      onChange={(e) =>
+                        updateFilter({
+                          inStock: e.target.checked ? "true" : null,
+                        })
+                      }
+                      className={styles.checkboxInput}
+                    />
+                    <span>В наявності</span>
+                  </label>
 
-        <label className={styles.checkbox}>
-          <input
-            type="checkbox"
-            checked={filters.onSale === "true"}
-            onChange={(e) =>
-              updateFilter({ onSale: e.target.checked ? "true" : null })
-            }
-            aria-label="Показати тільки товари зі знижкою"
-          />{" "}
-          Зі знижкою
-        </label>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={filters.onSale === "true"}
+                      onChange={(e) =>
+                        updateFilter({
+                          onSale: e.target.checked ? "true" : null,
+                        })
+                      }
+                      className={styles.checkboxInput}
+                    />
+                    <span>Зі знижкою</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.filtersActions}>
+              <Button variant="ghost" onClick={resetFilters}>
+                Скинути все
+              </Button>
+              <Button variant="primary" onClick={() => setIsFiltersOpen(false)}>
+                Застосувати
+              </Button>
+            </div>
+          </ModalContent>
+        </ModalRoot>
 
         <SelectRoot
           value={filters.sort}
@@ -414,14 +534,6 @@ export default function CatalogClient() {
             <SelectItem value="title-desc">Назва: Я → A</SelectItem>
           </SelectContent>
         </SelectRoot>
-
-        <Button
-          variant="ghost"
-          onClick={resetFilters}
-          aria-label="Скинути всі фільтри"
-        >
-          Скинути
-        </Button>
       </div>
 
       {/* Active filter chips */}
@@ -617,39 +729,19 @@ export default function CatalogClient() {
         </div>
       )}
 
-      {/* Pagination */}
-      {!productsLoading && products.length > 0 && pages > 1 && (
-        <nav
-          className={styles.pagination}
-          id="catalog-pagination"
-          aria-label="Пагінація"
-        >
-          <Button
-            id="catalog-prev"
-            variant="ghost"
-            disabled={filters.page <= 1}
-            onClick={() =>
-              updateFilter({ page: Math.max(1, filters.page - 1) })
-            }
-            aria-label="Попередня сторінка"
-          >
-            Назад
-          </Button>
-          <span id="catalog-page-indicator" style={{ opacity: 0.8 }}>
-            Сторінка {filters.page} з {pages}
-          </span>
-          <Button
-            id="catalog-next"
-            variant="ghost"
-            disabled={filters.page >= pages}
-            onClick={() =>
-              updateFilter({ page: Math.min(pages, filters.page + 1) })
-            }
-            aria-label="Наступна сторінка"
-          >
-            Далі
-          </Button>
-        </nav>
+      {/* Індикатор завантаження для бесконечного скролу */}
+      {!productsLoading && products.length > 0 && (
+        <div ref={loadMoreRef} className={styles.loadMore}>
+          {isFetchingNextPage && (
+            <div className={styles.loadingIndicator}>
+              <div className={styles.spinner} />
+              <span>Завантаження...</span>
+            </div>
+          )}
+          {!hasNextPage && products.length > 0 && (
+            <div className={styles.endMessage}>Ви переглянули всі товари</div>
+          )}
+        </div>
       )}
     </div>
   );

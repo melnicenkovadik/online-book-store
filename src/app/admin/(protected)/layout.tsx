@@ -1,56 +1,97 @@
-import { cookies } from "next/headers";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import type React from "react";
+"use client";
 
-export default async function AdminProtectedLayout({
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import type React from "react";
+import { useState } from "react";
+import { QueryProvider } from "@/providers/QueryProvider";
+import styles from "./admin-layout.module.scss";
+
+export default function AdminProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const hasSession = (await cookies()).get("admin_session")?.value === "1";
-  if (!hasSession) {
-    redirect("/admin/login");
-  }
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/admin/login");
+  };
+
+  const isActive = (path: string) => {
+    if (path === "/admin") {
+      return pathname === "/admin" || pathname === "/admin/dashboard";
+    }
+    return pathname.startsWith(path);
+  };
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "240px 1fr",
-        minHeight: "100vh",
-      }}
-    >
-      <aside style={{ borderRight: "1px solid #e5e7eb", padding: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Адмін</h2>
-        <nav style={{ display: "grid", gap: 8 }}>
-          <Link href="/admin">Панель керування</Link>
-          <Link href="/admin/products">Товари</Link>
-          <Link href="/admin/categories">Категорії</Link>
-          <Link href="/admin/orders">Замовлення</Link>
-          <Link href="/admin/media">Медіа</Link>
-          <Link href="/admin/settings">Налаштування</Link>
-        </nav>
-        <form
-          action="/api/admin/logout"
-          method="post"
-          style={{ marginTop: 16 }}
-        >
+    <div className={styles.layout}>
+      <header className={styles.header}>
+        <div className={styles.headerContainer}>
+          <Link href="/admin" className={styles.logo}>
+            📚 Admin Panel
+          </Link>
+
           <button
-            type="submit"
-            style={{
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-              cursor: "pointer",
-            }}
+            type="button"
+            className={styles.mobileMenuButton}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? "✕" : "☰"}
+          </button>
+
+          <nav
+            className={`${styles.nav} ${isMobileMenuOpen ? styles.navOpen : ""}`}
+          >
+            <Link
+              href="/admin"
+              className={`${styles.navLink} ${isActive("/admin") && pathname === "/admin" ? styles.active : ""}`}
+            >
+              Панель керування
+            </Link>
+            <Link
+              href="/admin/products"
+              className={`${styles.navLink} ${isActive("/admin/products") ? styles.active : ""}`}
+            >
+              Товари
+            </Link>
+            <Link
+              href="/admin/categories"
+              className={`${styles.navLink} ${isActive("/admin/categories") ? styles.active : ""}`}
+            >
+              Категорії
+            </Link>
+            <Link
+              href="/admin/orders"
+              className={`${styles.navLink} ${isActive("/admin/orders") ? styles.active : ""}`}
+            >
+              Замовлення
+            </Link>
+            <Link
+              href="/admin/settings"
+              className={`${styles.navLink} ${isActive("/admin/settings") ? styles.active : ""}`}
+            >
+              Налаштування
+            </Link>
+          </nav>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={styles.logoutButton}
           >
             Вийти
           </button>
-        </form>
-      </aside>
-      <main style={{ padding: 24 }}>{children}</main>
+        </div>
+      </header>
+
+      <main className={styles.main}>
+        <QueryProvider>{children}</QueryProvider>
+      </main>
     </div>
   );
 }

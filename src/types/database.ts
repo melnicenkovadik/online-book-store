@@ -29,13 +29,13 @@ export interface OrderDoc {
   number: string;
   items: Array<{
     productId: mongoose.Types.ObjectId;
-    qty: number;
     title: string;
     sku?: string;
     image?: string;
     basePrice: number;
     salePrice?: number | null;
     price: number;
+    qty: number;
   }>;
   customer: {
     fullName: string;
@@ -44,7 +44,9 @@ export interface OrderDoc {
   };
   delivery: {
     carrier: "nova" | "ukr";
+    city?: string;
     cityRef?: string;
+    warehouse?: string;
     warehouseRef?: string;
     address?: string;
   };
@@ -54,10 +56,11 @@ export interface OrderDoc {
     grand: number;
   };
   payment: {
-    provider: "fondy" | "liqpay" | "cod";
+    provider: "fondy" | "liqpay" | "cod" | "card" | "requisites";
     status: "pending" | "paid" | "failed";
     txId?: string;
   };
+  notes?: string;
   ttn?: string;
   status: "new" | "processing" | "shipped" | "completed" | "cancelled";
   createdAt: Date;

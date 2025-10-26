@@ -4,7 +4,8 @@ export interface CreateOrderInput {
   items: Array<{ productId: string; qty: number }>;
   customer: Order["customer"];
   delivery: Order["delivery"];
-  payment: { provider: "fondy" | "liqpay" | "cod" };
+  payment: { provider: "fondy" | "liqpay" | "cod" | "card" | "requisites" };
+  notes?: string;
 }
 
 export interface CreateOrderResponse {

@@ -9,9 +9,12 @@ const OrderItemSchema = new Schema({
     index: true, // Index for product lookup in orders
   },
   title: { type: String, required: true },
-  price: { type: Number, required: true },
-  quantity: { type: Number, required: true, min: 1 },
+  sku: { type: String },
   image: { type: String },
+  basePrice: { type: Number, required: true },
+  salePrice: { type: Number },
+  price: { type: Number, required: true },
+  qty: { type: Number, required: true, min: 1 },
 });
 
 const OrderSchema = new Schema<OrderDoc>(
@@ -38,14 +41,16 @@ const OrderSchema = new Schema<OrderDoc>(
     },
     delivery: {
       carrier: { type: String, enum: ["nova", "ukr"], required: true },
+      city: { type: String },
       cityRef: { type: String },
+      warehouse: { type: String },
       warehouseRef: { type: String },
       address: { type: String },
     },
     payment: {
       provider: {
         type: String,
-        enum: ["fondy", "liqpay", "cod"],
+        enum: ["fondy", "liqpay", "cod", "card", "requisites"],
         required: true,
       },
       txId: { type: String },
@@ -61,6 +66,7 @@ const OrderSchema = new Schema<OrderDoc>(
       shipping: { type: Number, default: 0 },
       grand: { type: Number, required: true },
     },
+    notes: { type: String },
     ttn: { type: String },
     createdAt: {
       type: Date,
@@ -80,5 +86,7 @@ OrderSchema.pre("save", function (next) {
   next();
 });
 
-export const OrderModel: Model<OrderDoc> =
-  (models.Order as Model<OrderDoc>) || model<OrderDoc>("Order", OrderSchema);
+// Export model with cached check
+export const OrderModel: Model<OrderDoc> = models.Order
+  ? (models.Order as Model<OrderDoc>)
+  : model<OrderDoc>("Order", OrderSchema);

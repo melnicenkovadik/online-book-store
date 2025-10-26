@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import styles from "../products/products.module.scss";
 
 export default function AdminSettingsPage() {
   const [status, setStatus] = React.useState<string | null>(null);
@@ -16,37 +17,37 @@ export default function AdminSettingsPage() {
         throw new Error(data?.error || "Seed failed");
       }
       setStatus(
-        `OK: categories=${data.categories}, products=${data.products}, upserts=${data.upserts}`,
+        `✅ Успішно: категорії=${data.categories}, товари=${data.products}, оновлено=${data.upserts}`,
       );
     } catch (e: unknown) {
-      setStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      setStatus(`❌ Помилка: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div>
-      <h1>Налаштування</h1>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Налаштування</h1>
+      </div>
 
-      <section style={{ marginTop: 16 }}>
-        <h3>Дані для демо</h3>
-        <p>Імпорт категорій та товарів з моків у базу даних.</p>
+      <div className={styles.settingsSection}>
+        <h2 className={styles.sectionTitle}>Дані для демо</h2>
+        <p className={styles.sectionDescription}>
+          Імпорт категорій та товарів з моків у базу даних. Використовуйте для
+          тестування та наповнення бази демо-даними.
+        </p>
         <button
           type="button"
           onClick={seed}
           disabled={loading}
-          style={{
-            padding: "8px 12px",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-            cursor: "pointer",
-          }}
+          className={styles.addButton}
         >
-          {loading ? "Імпорт..." : "Засіяти базу (категорії + товари)"}
+          {loading ? "⏳ Імпорт..." : "🌱 Засіяти базу (категорії + товари)"}
         </button>
-        {status && <div style={{ marginTop: 8 }}>{status}</div>}
-      </section>
+        {status && <div className={styles.statusMessage}>{status}</div>}
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@
   max-height: 280px;
   overflow: auto;
   box-shadow: var(--shadow-lg);
-  z-index: var(--z-index-dropdown, 1000);
+  z-index: 9999;
 }
 .item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; }
 .item[data-state='checked'] { background: rgba(0,0,0,0.06); }

@@ -27,11 +27,12 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDB();
     const payload = await req.json();
-    const { items, customer, delivery, payment } = payload as {
+    const { items, customer, delivery, payment, notes } = payload as {
       items: Array<{ productId: string; qty: number }>;
       customer: Order["customer"];
       delivery: Order["delivery"];
       payment: { provider: Order["payment"]["provider"] };
+      notes?: string;
     };
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     const totals = calcTotals(normalizedItems);
     const number = generateOrderNumber();
 
-    const order = new OrderModel({
+    const orderData = {
       number,
       items: normalizedItems.map((i) => ({
         productId: new mongoose.Types.ObjectId(i.productId),
@@ -126,11 +127,21 @@ export async function POST(req: NextRequest) {
         price: i.price,
       })),
       customer,
-      delivery,
+      delivery: {
+        carrier: delivery.carrier,
+        ...(delivery.city && { city: delivery.city }),
+        ...(delivery.cityRef && { cityRef: delivery.cityRef }),
+        ...(delivery.warehouse && { warehouse: delivery.warehouse }),
+        ...(delivery.warehouseRef && { warehouseRef: delivery.warehouseRef }),
+        ...(delivery.address && { address: delivery.address }),
+      },
       totals,
       payment: { provider: payment.provider, status: "pending" },
       status: "new",
-    });
+      ...(notes && { notes }),
+    };
+
+    const order = new OrderModel(orderData);
     const created = await order.save();
 
     return NextResponse.json(

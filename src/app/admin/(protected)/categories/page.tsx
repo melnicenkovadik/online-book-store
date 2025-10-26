@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
-import type React from "react";
 import useSWR from "swr";
 import { AdminApi } from "@/services/admin";
 import type { Category } from "@/types/catalog";
+import styles from "../products/products.module.scss";
 
 export default function AdminCategoriesListPage() {
   const { data, mutate, isLoading } = useSWR("admin/categories", () =>
@@ -11,109 +11,78 @@ export default function AdminCategoriesListPage() {
   );
 
   const onDelete = async (id: string) => {
-    if (!confirm("Delete category?")) return;
+    if (!confirm("Видалити категорію?")) return;
     await AdminApi.deleteCategory(id);
     mutate();
   };
 
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Categories</h1>
-        <Link
-          href="/admin/categories/new"
-          style={{
-            padding: "8px 12px",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-          }}
-        >
-          New category
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Категорії</h1>
+        <Link href="/admin/categories/new" className={styles.addButton}>
+          <span>+</span> Додати категорію
         </Link>
       </div>
 
-      <div
-        style={{
-          border: "1px solid #e5e7eb",
-          borderRadius: 12,
-          overflow: "hidden",
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
           <thead>
-            <tr style={{ background: "#f9fafb" }}>
-              <th style={th}>Name</th>
-              <th style={th}>Slug</th>
-              <th style={th}>Parent</th>
-              <th style={th}>Actions</th>
+            <tr>
+              <th className={styles.th}>Назва</th>
+              <th className={styles.th}>Slug</th>
+              <th className={styles.th}>Батьківська</th>
+              <th className={styles.th}>Дії</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={4} style={{ padding: 16 }}>
-                  Loading…
+                <td colSpan={4} className={styles.td}>
+                  Завантаження…
                 </td>
               </tr>
             )}
             {data?.map((c: Category) => (
               <tr key={c.id}>
-                <td style={td}>{c.name}</td>
-                <td style={td}>{c.slug}</td>
-                <td style={td}>
+                <td className={styles.td}>{c.name}</td>
+                <td className={styles.td}>{c.slug}</td>
+                <td className={styles.td}>
                   {data.find((p: Category) => p.id === c.parentId)?.name || "—"}
                 </td>
-                <td style={td}>
-                  <Link
-                    href={`/admin/categories/${c.id}`}
-                    style={{ marginRight: 8 }}
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(c.id)}
-                    style={{
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 6,
-                      padding: "4px 8px",
-                    }}
-                  >
-                    Delete
-                  </button>
+                <td className={styles.td}>
+                  <div className={styles.actions}>
+                    <Link
+                      href={`/admin/categories/${c.id}`}
+                      className={styles.iconButton}
+                      title="Редагувати"
+                    >
+                      ✏️
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(c.id)}
+                      className={styles.iconButton}
+                      title="Видалити"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
             {!isLoading && data?.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ padding: 16, color: "#6b7280" }}>
-                  No categories
+                <td colSpan={4} className={styles.tdEmpty}>
+                  Категорій немає
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      <div className={styles.info}>Всього категорій: {data?.length || 0}</div>
     </div>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: "left",
-  padding: 12,
-  borderBottom: "1px solid #e5e7eb",
-  fontWeight: 600,
-  fontSize: 12,
-  color: "#6b7280",
-};
-const td: React.CSSProperties = {
-  padding: 12,
-  borderBottom: "1px solid #f3f4f6",
-};

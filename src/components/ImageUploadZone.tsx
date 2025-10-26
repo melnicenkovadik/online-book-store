@@ -62,21 +62,16 @@ export default function ImageUploadZone({
         >
           {images.map((url, index) => (
             <button
-              type="button"
               key={`image-${url}`}
+              type="button"
               style={{
                 ...imagePreviewStyle,
                 padding: 0,
-                background: "none",
                 cursor: "pointer",
-                textAlign: "left",
+                border: "none",
+                background: "none",
               }}
-              aria-label={`Зображення ${index + 1}, натисніть для редагування`}
-              onKeyDown={(e) => {
-                if (e.key === "Delete" || e.key === "Backspace") {
-                  removeImage(index);
-                }
-              }}
+              aria-label={`Зображення ${index + 1}`}
               onMouseEnter={(e) => {
                 const overlay = e.currentTarget.querySelector(
                   "[data-overlay]",
@@ -106,7 +101,10 @@ export default function ImageUploadZone({
               <div data-overlay style={overlayStyle}>
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(index);
+                  }}
                   style={deleteButtonStyle}
                   title="Видалити зображення"
                 >

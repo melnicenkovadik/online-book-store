@@ -36,6 +36,7 @@
     "react-dropzone": "^14.3.8",
     "react-lazy-load-image-component": "^1.6.3",
     "react-zoom-pan-pinch": "^3.7.0",
+    "recharts": "^3.3.0",
     "swr": "^2.3.6",
     "zod": "^4.1.1",
     "zustand": "^4.5.2"

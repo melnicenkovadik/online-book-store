@@ -1,0 +1,497 @@
+.orderMeta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0; // Важно для корректного overflow в grid
+}
+
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0; // Важно для корректного overflow в grid
+}
+
+.section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    border-radius: 8px;
+  }
+}
+
+// Специальный класс для секции с таблицей
+.sectionWithTable {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px 0;
+  min-width: 0; // Важно для корректного overflow в flex-контейнере
+  overflow: hidden; // Предотвращает выход содержимого за границы
+
+  .sectionTitle {
+    padding: 0 24px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px 0;
+    border-radius: 8px;
+    
+    .sectionTitle {
+      padding: 0 16px;
+    }
+  }
+}
+
+// Обертка для таблицы внутри секции
+.tableWrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+  
+  @media (max-width: 768px) {
+    min-width: 600px;
+  }
+}
+
+.th {
+  text-align: left;
+  padding: 16px;
+  background: #f9fafb;
+  font-weight: 600;
+  font-size: 13px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+  
+  @media (max-width: 768px) {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+}
+
+.td {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  font-size: 14px;
+  
+  @media (max-width: 768px) {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+}
+
+.oldPrice {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #111827;
+}
+
+.infoGrid {
+  display: grid;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+
+  strong {
+    color: #111827;
+    font-weight: 600;
+  }
+}
+
+.techDetails {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  
+  summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 600;
+    user-select: none;
+    
+    &:hover {
+      color: #3b82f6;
+    }
+  }
+}
+
+.techInfo {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  font-family: monospace;
+  
+  strong {
+    color: #374151;
+  }
+}
+
+.totalsGrid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  width: 100%;
+
+  span {
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+
+  strong {
+    color: #111827;
+    text-align: right;
+    flex-shrink: 0;
+  }
+}
+
+.totalRowMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 2px solid #e5e7eb;
+  margin-top: 8px;
+  font-size: 16px;
+  width: 100%;
+
+  span {
+    color: #111827;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  strong {
+    color: #3b82f6;
+    font-size: 1.25rem;
+    text-align: right;
+    flex-shrink: 0;
+  }
+}
+
+.productCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.productImage {
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.productLink {
+  color: #3b82f6;
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+}
+
+.paymentStatus {
+  font-weight: 600;
+}
+
+.requisites {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-left: 4px solid #3b82f6;
+
+  strong {
+    color: #111827;
+    font-weight: 600;
+  }
+}
+
+.notes {
+  padding: 16px;
+  background: #fffbeb;
+  border-radius: 8px;
+  border-left: 4px solid #f59e0b;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #78350f;
+  white-space: pre-wrap;
+}
+
+.controls {
+  display: grid;
+  gap: 16px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.select,
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.buttons {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.saveButton {
+  padding: 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+
+  &:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.deleteButton {
+  padding: 12px;
+  background: white;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+
+  &:hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Responsive styles for mobile
+@media (max-width: 768px) {
+  .grid {
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .mainColumn,
+  .sideColumn {
+    gap: 16px;
+  }
+
+  .sectionTitle {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .infoGrid {
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  .productCell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .productImage {
+    width: 60px;
+    height: 60px;
+  }
+
+  .totalsGrid {
+    gap: 10px;
+  }
+
+  .totalRow {
+    font-size: 13px;
+    padding: 6px 0;
+    flex-wrap: nowrap;
+
+    span {
+      min-width: 100px;
+    }
+
+    strong {
+      margin-left: auto;
+    }
+  }
+
+  .totalRowMain {
+    font-size: 15px;
+    padding: 10px 0;
+    flex-wrap: nowrap;
+
+    span {
+      min-width: 100px;
+    }
+
+    strong {
+      font-size: 1.125rem;
+      margin-left: auto;
+    }
+  }
+
+  .requisites {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .notes {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .controls {
+    gap: 12px;
+  }
+
+  .label {
+    font-size: 13px;
+  }
+
+  .select,
+  .input {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .buttons {
+    gap: 10px;
+  }
+
+  .saveButton,
+  .deleteButton {
+    padding: 10px;
+    font-size: 13px;
+  }
+}
+
+// Extra small devices
+@media (max-width: 480px) {
+  .sectionTitle {
+    font-size: 0.9375rem;
+  }
+
+  .infoGrid {
+    font-size: 12px;
+  }
+
+  .productCell {
+    font-size: 11px;
+  }
+
+  .productLink {
+    font-size: 12px;
+  }
+
+  .totalRow {
+    font-size: 12px;
+
+    span {
+      min-width: 80px;
+    }
+  }
+
+  .totalRowMain {
+    font-size: 14px;
+
+    span {
+      min-width: 80px;
+    }
+
+    strong {
+      font-size: 1rem;
+    }
+  }
+}
+

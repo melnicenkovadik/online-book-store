@@ -44,7 +44,7 @@ export default async function Home() {
   const featuredProducts = await getFeaturedProducts();
 
   return (
-    <main className={styles.main}>
+    <>
       <section className={styles.hero}>
         <div className={styles.heroContent}>
           <h1 className={styles.title}>
@@ -139,6 +139,6 @@ export default async function Home() {
           </Link>
         </div>
       </section>
-    </main>
+    </>
   );
 }

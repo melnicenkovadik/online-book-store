@@ -1,144 +1,389 @@
 "use client";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import Link from "next/link";
 import React from "react";
-import useSWR from "swr";
+import { useDebounce } from "@/hooks";
 import { AdminApi } from "@/services/admin";
 import type { Product } from "@/types/catalog";
+import styles from "./products.module.scss";
 
 export default function AdminProductsListPage() {
   const [q, setQ] = React.useState("");
-  const [page, setPage] = React.useState(1);
-  const perPage = 20;
-  const { data, mutate, isLoading, error } = useSWR(
-    ["admin/products", { q, page, perPage }],
-    () => AdminApi.listProducts({ q, page, perPage }),
-    {
-      onError: (err) => {
-        console.error("Failed to load products:", err);
-      },
+  const [sort, setSort] = React.useState("newest");
+  const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
+  const [inStock, setInStock] = React.useState(false);
+  const [onSale, setOnSale] = React.useState(false);
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const perPage = 50;
+  const debouncedQ = useDebounce(q, 300);
+  const queryClient = useQueryClient();
+
+  // Infinite query для продуктів
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending: isLoading,
+    error,
+  } = useInfiniteQuery({
+    queryKey: [
+      "admin/products",
+      { q: debouncedQ, sort, categoryFilter, inStock, onSale },
+    ],
+    queryFn: ({ pageParam = 1 }) =>
+      AdminApi.listProducts({
+        q: debouncedQ,
+        page: pageParam,
+        perPage,
+        categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+        inStock: inStock || undefined,
+        onSale: onSale || undefined,
+        sort,
+      }),
+    getNextPageParam: (lastPage, pages) => {
+      const totalPages = Math.ceil(lastPage.total / perPage);
+      const nextPage = pages.length + 1;
+      return nextPage <= totalPages ? nextPage : undefined;
     },
-  );
+    initialPageParam: 1,
+  });
+
+  // Отримуємо всі продукти з усіх сторінок
+  const allProducts = React.useMemo(() => {
+    return data?.pages.flatMap((page) => page.items) ?? [];
+  }, [data]);
+
+  const total = data?.pages[0]?.total ?? 0;
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ["admin/categories"],
+    queryFn: () => AdminApi.listCategories(),
+  });
 
   const onDelete = async (id: string) => {
     if (!confirm("Видалити товар?")) return;
     await AdminApi.deleteProduct(id);
-    mutate();
+    queryClient.invalidateQueries({ queryKey: ["admin/products"] });
   };
 
-  const total = data?.total || 0;
-  const pages = Math.max(1, Math.ceil(total / perPage));
+  const onDeleteSelected = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Видалити ${selected.size} товар(ів)?`)) return;
+
+    for (const id of selected) {
+      await AdminApi.deleteProduct(id);
+    }
+
+    setSelected(new Set());
+    queryClient.invalidateQueries({ queryKey: ["admin/products"] });
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selected);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelected(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === allProducts.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(allProducts.map((p: Product) => p.id)));
+    }
+  };
+
+  // Бекенд вже фільтрує і сортує, просто повертаємо всі продукти
+  const sortedProducts = allProducts;
+
+  // IntersectionObserver для автопідгрузки
+  const loadMoreRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const currentRef = loadMoreRef.current;
+    if (!currentRef || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(currentRef);
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Підраховуємо активні фільтри
+  const activeFiltersCount = React.useMemo(() => {
+    let count = 0;
+    if (categoryFilter !== "all") count++;
+    if (inStock) count++;
+    if (onSale) count++;
+    return count;
+  }, [categoryFilter, inStock, onSale]);
+
+  // Скидаємо фільтри
+  const resetFilters = () => {
+    setQ("");
+    setCategoryFilter("all");
+    setInStock(false);
+    setOnSale(false);
+    setSort("newest");
+  };
 
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Товари</h1>
-        <Link
-          href="/admin/products/new"
-          style={{
-            padding: "8px 12px",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-          }}
-        >
-          Додати товар
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Товари</h1>
+          <div className={styles.headerStats}>
+            {activeFiltersCount > 0 || q ? (
+              <>
+                Знайдено: <strong>{total}</strong>{" "}
+                {total === 1 ? "товар" : "товарів"}
+                {hasNextPage && (
+                  <span style={{ color: "#6b7280", marginLeft: "8px" }}>
+                    (завантажено {sortedProducts.length})
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                Всього: <strong>{total}</strong>{" "}
+                {total === 1 ? "товар" : "товарів"}
+              </>
+            )}
+          </div>
+        </div>
+        <Link href="/admin/products/new" className={styles.addButton}>
+          <span>+</span> Додати товар
         </Link>
       </div>
 
-      <div style={{ marginBottom: 12, display: "flex", gap: 8 }}>
+      <div className={styles.toolbar}>
         <input
-          placeholder="Пошук..."
+          placeholder="Пошук товарів..."
           value={q}
-          onChange={(e) => {
-            setPage(1);
-            setQ(e.target.value);
-          }}
-          style={{
-            padding: "8px 10px",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-            width: 320,
-          }}
+          onChange={(e) => setQ(e.target.value)}
+          className={styles.searchInput}
         />
+
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className={styles.sortSelect}
+        >
+          <option value="all">Усі категорії</option>
+          {categoriesData?.map((cat: any) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className={styles.sortSelect}
+        >
+          <option value="newest">Новинки</option>
+          <option value="price-asc">Ціна: від низької</option>
+          <option value="price-desc">Ціна: від високої</option>
+          <option value="title-asc">Назва: A → Я</option>
+          <option value="title-desc">Назва: Я → A</option>
+        </select>
+
+        <label className={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            checked={inStock}
+            onChange={(e) => setInStock(e.target.checked)}
+            className={styles.checkboxInput}
+          />
+          <span>В наявності</span>
+        </label>
+
+        <label className={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            checked={onSale}
+            onChange={(e) => setOnSale(e.target.checked)}
+            className={styles.checkboxInput}
+          />
+          <span>Зі знижкою</span>
+        </label>
+
+        {activeFiltersCount > 0 && (
+          <button
+            type="button"
+            onClick={resetFilters}
+            className={styles.resetButton}
+          >
+            ✕ Скинути фільтри
+          </button>
+        )}
+
+        {selected.size > 0 && (
+          <button
+            type="button"
+            onClick={onDeleteSelected}
+            className={styles.deleteButton}
+          >
+            🗑️ Видалити ({selected.size})
+          </button>
+        )}
       </div>
 
-      <div
-        style={{
-          overflowX: "auto",
-          border: "1px solid #e5e7eb",
-          borderRadius: 12,
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      {/* Active filters chips */}
+      {activeFiltersCount > 0 && (
+        <div className={styles.chips}>
+          {q && (
+            <button
+              type="button"
+              className={styles.chip}
+              onClick={() => setQ("")}
+            >
+              пошук: "{q}" ×
+            </button>
+          )}
+          {categoryFilter !== "all" && (
+            <button
+              type="button"
+              className={styles.chip}
+              onClick={() => setCategoryFilter("all")}
+            >
+              категорія ×
+            </button>
+          )}
+          {inStock && (
+            <button
+              type="button"
+              className={styles.chip}
+              onClick={() => setInStock(false)}
+            >
+              в наявності ×
+            </button>
+          )}
+          {onSale && (
+            <button
+              type="button"
+              className={styles.chip}
+              onClick={() => setOnSale(false)}
+            >
+              зі знижкою ×
+            </button>
+          )}
+          <button
+            type="button"
+            className={styles.chipReset}
+            onClick={resetFilters}
+          >
+            Скинути все
+          </button>
+        </div>
+      )}
+
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
           <thead>
-            <tr style={{ background: "#f9fafb" }}>
-              <th style={th}>Назва</th>
-              <th style={th}>Ціна</th>
-              <th style={th}>Склад</th>
-              <th style={th}>Дії</th>
+            <tr>
+              <th className={styles.checkboxCol}>
+                <input
+                  type="checkbox"
+                  checked={
+                    selected.size === sortedProducts.length &&
+                    sortedProducts.length > 0
+                  }
+                  onChange={toggleSelectAll}
+                  className={styles.checkbox}
+                />
+              </th>
+              <th className={styles.th}>Назва</th>
+              <th className={styles.th}>Ціна</th>
+              <th className={styles.th}>Склад</th>
+              <th className={styles.th}>Дії</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={4} style={{ padding: 16 }}>
+                <td colSpan={5} className={styles.td}>
                   Завантаження…
                 </td>
               </tr>
             )}
             {error && (
               <tr>
-                <td colSpan={4} style={{ padding: 16, color: "#ef4444" }}>
+                <td colSpan={5} className={styles.tdError}>
                   Помилка завантаження: {error.message}
                 </td>
               </tr>
             )}
             {!isLoading &&
               !error &&
-              data?.items?.map((p: Product) => (
-                <tr key={p.id}>
-                  <td style={td}>{p.title}</td>
-                  <td style={td}>
+              sortedProducts.map((p: Product) => (
+                <tr
+                  key={p.id}
+                  className={selected.has(p.id) ? styles.selectedRow : ""}
+                >
+                  <td className={styles.checkboxCol}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      className={styles.checkbox}
+                    />
+                  </td>
+                  <td className={styles.td}>{p.title}</td>
+                  <td className={styles.td}>
                     {p.salePrice != null ? (
                       <>
-                        <s style={{ color: "#6b7280" }}>{p.price}</s>{" "}
-                        <b>{p.salePrice}</b>
+                        <s className={styles.oldPrice}>{p.price}</s>{" "}
+                        <strong className={styles.salePrice}>
+                          {p.salePrice}
+                        </strong>
                       </>
                     ) : (
                       p.price
                     )}
                   </td>
-                  <td style={td}>{p.stock}</td>
-                  <td style={td}>
-                    <Link
-                      href={`/admin/products/${p.id}`}
-                      style={{ marginRight: 8 }}
-                    >
-                      Редагувати
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(p.id)}
-                      style={{
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 6,
-                        padding: "4px 8px",
-                      }}
-                    >
-                      Видалити
-                    </button>
+                  <td className={styles.td}>{p.stock}</td>
+                  <td className={styles.td}>
+                    <div className={styles.actions}>
+                      <Link
+                        href={`/admin/products/${p.id}`}
+                        className={styles.iconButton}
+                        title="Редагувати"
+                      >
+                        ✏️
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(p.id)}
+                        className={styles.iconButton}
+                        title="Видалити"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
-            {!isLoading && !error && data?.items?.length === 0 && (
+            {!isLoading && !error && sortedProducts.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ padding: 16, color: "#6b7280" }}>
+                <td colSpan={5} className={styles.tdEmpty}>
                   Товарів немає
                 </td>
               </tr>
@@ -147,47 +392,39 @@ export default function AdminProductsListPage() {
         </table>
       </div>
 
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}
-      >
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          style={btn}
-        >
-          Назад
-        </button>
-        <span style={{ fontSize: 12, color: "#6b7280" }}>
-          Сторінка {page} / {pages}
-        </span>
-        <button
-          type="button"
-          disabled={page >= pages}
-          onClick={() => setPage((p) => Math.min(pages, p + 1))}
-          style={btn}
-        >
-          Вперед
-        </button>
-      </div>
+      {/* Індикатор завантаження для бесконечного скролу */}
+      {!isLoading && sortedProducts.length > 0 && (
+        <div ref={loadMoreRef} className={styles.loadMore}>
+          {isFetchingNextPage && (
+            <div className={styles.loadingIndicator}>
+              <div className={styles.spinner} />
+              <span>Завантаження...</span>
+            </div>
+          )}
+          {!hasNextPage && sortedProducts.length > 0 && (
+            <div className={styles.endMessage}>Всі товари завантажено</div>
+          )}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && sortedProducts.length === 0 && (
+        <div className={styles.empty}>
+          <div className={styles.emptyTitle}>Товарів не знайдено</div>
+          <div className={styles.emptyText}>
+            Спробуйте змінити фільтри або скинути їх
+          </div>
+          {activeFiltersCount > 0 && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className={styles.addButton}
+            >
+              Скинути фільтри
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: "left",
-  padding: 12,
-  borderBottom: "1px solid #e5e7eb",
-  fontWeight: 600,
-  fontSize: 12,
-  color: "#6b7280",
-};
-const td: React.CSSProperties = {
-  padding: 12,
-  borderBottom: "1px solid #f3f4f6",
-};
-const btn: React.CSSProperties = {
-  padding: "6px 10px",
-  border: "1px solid #e5e7eb",
-  borderRadius: 8,
-};

@@ -18,13 +18,15 @@ export type OrderCustomer = {
 
 export type DeliveryInfo = {
   carrier: "nova" | "ukr";
+  city?: string;
   cityRef?: string;
+  warehouse?: string;
   warehouseRef?: string;
   address?: string;
 };
 
 export type PaymentInfo = {
-  provider: "fondy" | "liqpay" | "cod";
+  provider: "fondy" | "liqpay" | "cod" | "card" | "requisites";
   status: "pending" | "paid" | "failed";
   txId?: string;
 };

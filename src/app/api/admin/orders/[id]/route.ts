@@ -46,6 +46,7 @@ export async function GET(
   };
   const doc = raw as (OrderDoc & { items: PopulatedItem[] }) | null;
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   const items = (doc.items || []).map((it) => ({
     productId: String(it.productId?._id || it.productId),
     qty: it.qty,

@@ -25,6 +25,11 @@ export type AdminOrderDetail = Order & {
       images: string[];
     } | null;
   }>;
+  delivery: Order["delivery"] & {
+    city?: string;
+    warehouse?: string;
+  };
+  notes?: string;
   ttn?: string;
 };
 
