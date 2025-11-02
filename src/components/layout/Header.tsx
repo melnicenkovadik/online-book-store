@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -15,13 +15,11 @@ import { useCart } from "@/store/cart";
 import type { Category } from "@/types/catalog";
 import styles from "./Header.module.scss";
 
-export default function Header() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+function NavLinks() {
   const pathname = usePathname();
-  const cart = useCart();
-  const isAdmin = pathname.startsWith("/admin");
+  const searchParams = useSearchParams();
+  const currentCategoryId = searchParams.get("categoryId");
 
-  // Завантаження категорій через React Query
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -29,9 +27,87 @@ export default function Header() {
       if (!res.ok) throw new Error("Failed to fetch categories");
       return res.json();
     },
-    staleTime: 5 * 60 * 1000, // 5 хвилин
-    gcTime: 10 * 60 * 1000, // 10 хвилин
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
+
+  return (
+    <>
+      <li className={styles.navItem}>
+        <Link
+          href="/"
+          className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
+        >
+          Головна
+        </Link>
+      </li>
+      <li className={styles.navItem}>
+        <Link
+          href="/catalog?categoryId=69075c159f395fe867f103e2"
+          className={`${styles.navLink} ${pathname === "/catalog" && currentCategoryId === "69075c159f395fe867f103e2" ? styles.active : ""}`}
+        >
+          1 клас
+        </Link>
+      </li>
+      <li className={styles.navItem}>
+        <Link
+          href="/catalog?categoryId=69075c169f395fe867f103e3"
+          className={`${styles.navLink} ${pathname === "/catalog" && currentCategoryId === "69075c169f395fe867f103e3" ? styles.active : ""}`}
+        >
+          2 клас
+        </Link>
+      </li>
+      <li className={styles.navItem}>
+        <Link
+          href="/catalog?categoryId=69075c169f395fe867f103e4"
+          className={`${styles.navLink} ${pathname === "/catalog" && currentCategoryId === "69075c169f395fe867f103e4" ? styles.active : ""}`}
+        >
+          3 клас
+        </Link>
+      </li>
+      <li className={styles.navItem}>
+        <Link
+          href="/catalog?categoryId=69075c169f395fe867f103e5"
+          className={`${styles.navLink} ${pathname === "/catalog" && currentCategoryId === "69075c169f395fe867f103e5" ? styles.active : ""}`}
+        >
+          4 клас
+        </Link>
+      </li>
+      <li className={styles.navItem}>
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className={styles.navLink}>
+              Каталог <span className={styles.dropdownArrow}>▼</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem asChild>
+              <Link href="/catalog" className={styles.dropdownLink}>
+                Всі книги
+              </Link>
+            </DropdownMenuItem>
+            {categories.map((category) => (
+              <DropdownMenuItem key={category.id} asChild>
+                <Link
+                  href={`/catalog?categoryId=${category.id}`}
+                  className={styles.dropdownLink}
+                >
+                  {category.name}
+                </Link>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenuRoot>
+      </li>
+    </>
+  );
+}
+
+export default function Header() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const cart = useCart();
+  const isAdmin = pathname.startsWith("/admin");
 
   // Close mobile menu when navigating
   // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is needed to trigger on navigation
@@ -133,53 +209,15 @@ export default function Header() {
         >
           <div className={styles.container}>
             <ul className={styles.navList}>
-              <li className={styles.navItem}>
-                <Link
-                  href="/"
-                  className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
-                >
-                  Головна
-                </Link>
-              </li>
-              <li className={styles.navItem}>
-                <DropdownMenuRoot>
-                  <DropdownMenuTrigger asChild>
-                    <button type="button" className={styles.navLink}>
-                      Каталог <span className={styles.dropdownArrow}>▼</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem asChild>
-                      <Link href="/catalog" className={styles.dropdownLink}>
-                        Всі книги
-                      </Link>
-                    </DropdownMenuItem>
-                    {categories.map((category) => (
-                      <DropdownMenuItem key={category.id} asChild>
-                        <Link
-                          href={`/catalog?categoryId=${category.id}`}
-                          className={styles.dropdownLink}
-                        >
-                          {category.name}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenuRoot>
-              </li>
-              <li className={styles.navItem}>
-                <Link
-                  href="/catalog?onSale=true"
-                  className={`${styles.navLink} ${styles.saleLink}`}
-                >
-                  Акції
-                </Link>
-              </li>
-              <li className={styles.navItem}>
-                <Link href="/catalog?sort=newest" className={styles.navLink}>
-                  Новинки
-                </Link>
-              </li>
+              <Suspense
+                fallback={
+                  <li className={styles.navItem}>
+                    <span className={styles.navLink}>Завантаження...</span>
+                  </li>
+                }
+              >
+                <NavLinks />
+              </Suspense>
             </ul>
           </div>
         </nav>

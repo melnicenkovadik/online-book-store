@@ -70,9 +70,19 @@ export async function GET(req: Request) {
 
     if (categoryId) {
       try {
-        andExpr.push({ categoryIds: new mongoose.Types.ObjectId(categoryId) });
+        const objectId = new mongoose.Types.ObjectId(categoryId);
+        andExpr.push({ categoryIds: objectId });
       } catch {
-        // ignore invalid ObjectId filter
+        // ignore invalid ObjectId filter - return empty results
+        return NextResponse.json(
+          { items: [], page: 1, perPage: perPage ?? 12, total: 0 },
+          {
+            status: 200,
+            headers: {
+              "Cache-Control": CACHE_CONTROL_HEADER,
+            },
+          },
+        );
       }
     }
 

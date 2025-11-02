@@ -58,9 +58,27 @@ export async function GET(req: Request) {
 
     if (categoryId) {
       try {
-        andExpr.push({ categoryIds: new mongoose.Types.ObjectId(categoryId) });
+        const objectId = new mongoose.Types.ObjectId(categoryId);
+        andExpr.push({ categoryIds: objectId });
       } catch {
-        // ignore invalid ObjectId filter
+        // ignore invalid ObjectId filter - return empty facets
+        return NextResponse.json(
+          {
+            categories: {},
+            price: { min: 0, max: 1000 },
+            years: [],
+            authors: [],
+            publishers: [],
+            languages: [],
+            coverTypes: [],
+          },
+          {
+            status: 200,
+            headers: {
+              "Cache-Control": CACHE_CONTROL_HEADER,
+            },
+          },
+        );
       }
     }
 
