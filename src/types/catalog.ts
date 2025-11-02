@@ -13,14 +13,22 @@ export type ProductAttributes = {
   year?: number;
   author?: string;
   publisher?: string;
+  publisherCode?: string; // видавничий код / внутренний код
   pages?: number;
   coverType?: string; // обложка: мягкая/твердая
   series?: string;
   format?: string; // размеры, напр. 145x200 мм
+  color?: string;
+  model?: string;
   isbn?: string;
   barcode?: string;
   description?: string;
   rating?: { value: number; count: number };
+  source?: {
+    vendor?: string;
+    url?: string;
+    externalId?: string;
+  };
 };
 
 export type Product = {

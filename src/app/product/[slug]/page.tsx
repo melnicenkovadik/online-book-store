@@ -75,6 +75,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!product) {
     notFound();
   }
-
+  console.log("product", product);
   return <ProductClient initialProduct={product} />;
 }

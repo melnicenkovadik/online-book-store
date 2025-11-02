@@ -304,6 +304,7 @@ export default function ProductClient({ initialProduct }: ProductClientProps) {
                 <ul
                   className={`${"product-property-list"} ${styles.propsList}`}
                 >
+                  {/* Основна інформація */}
                   {product.attributes.author ? (
                     <li className="property-item">
                       <span className={styles.propTitle}>Автор</span>
@@ -314,27 +315,26 @@ export default function ProductClient({ initialProduct }: ProductClientProps) {
                   ) : null}
                   {product.attributes.publisher ? (
                     <li className="property-item">
-                      <span className={styles.propTitle}>Виробник</span>
+                      <span className={styles.propTitle}>Видавництво</span>
                       <span className="propery-des">
                         {product.attributes.publisher}
                       </span>
                     </li>
                   ) : null}
+                  {product.attributes.publisherCode ? (
+                    <li className="property-item">
+                      <span className={styles.propTitle}>Видавничий код</span>
+                      <span className="propery-des">
+                        {product.attributes.publisherCode as string}
+                      </span>
+                    </li>
+                  ) : null}
+                  {/* Навчальні параметри */}
                   {product.attributes.class ? (
                     <li className="property-item">
                       <span className={styles.propTitle}>Клас</span>
                       <span className="propery-des">
                         {product.attributes.class}
-                      </span>
-                    </li>
-                  ) : null}
-                  {product.attributes.language ? (
-                    <li className="property-item">
-                      <span className={styles.propTitle}>Мова</span>
-                      <span className="propery-des">
-                        {product.attributes.language === "uk"
-                          ? "Українська"
-                          : product.attributes.language}
                       </span>
                     </li>
                   ) : null}
@@ -348,6 +348,17 @@ export default function ProductClient({ initialProduct }: ProductClientProps) {
                       </span>
                     </li>
                   ) : null}
+                  {product.attributes.language ? (
+                    <li className="property-item">
+                      <span className={styles.propTitle}>Мова</span>
+                      <span className="propery-des">
+                        {product.attributes.language === "uk"
+                          ? "Українська"
+                          : product.attributes.language}
+                      </span>
+                    </li>
+                  ) : null}
+                  {/* Фізичні характеристики */}
                   {product.attributes.year ? (
                     <li className="property-item">
                       <span className={styles.propTitle}>Рік випуску</span>
@@ -374,14 +385,6 @@ export default function ProductClient({ initialProduct }: ProductClientProps) {
                       </span>
                     </li>
                   ) : null}
-                  {product.attributes.series ? (
-                    <li className="property-item">
-                      <span className={styles.propTitle}>Серія</span>
-                      <span className="propery-des">
-                        {product.attributes.series}
-                      </span>
-                    </li>
-                  ) : null}
                   {product.attributes.format ? (
                     <li className="property-item">
                       <span className={styles.propTitle}>Формат</span>
@@ -390,6 +393,32 @@ export default function ProductClient({ initialProduct }: ProductClientProps) {
                       </span>
                     </li>
                   ) : null}
+                  {product.attributes.series ? (
+                    <li className="property-item">
+                      <span className={styles.propTitle}>Серія</span>
+                      <span className="propery-des">
+                        {product.attributes.series}
+                      </span>
+                    </li>
+                  ) : null}
+                  {/* Додаткові характеристики */}
+                  {product.attributes.color ? (
+                    <li className="property-item">
+                      <span className={styles.propTitle}>Колір</span>
+                      <span className="propery-des">
+                        {product.attributes.color as string}
+                      </span>
+                    </li>
+                  ) : null}
+                  {product.attributes.model ? (
+                    <li className="property-item">
+                      <span className={styles.propTitle}>Модель</span>
+                      <span className="propery-des">
+                        {product.attributes.model as string}
+                      </span>
+                    </li>
+                  ) : null}
+                  {/* Ідентифікаційні коди */}
                   {product.attributes.isbn ? (
                     <li className="property-item">
                       <span className={styles.propTitle}>ISBN</span>

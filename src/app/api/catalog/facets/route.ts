@@ -176,14 +176,12 @@ export async function GET(req: Request) {
             { $group: { _id: "$attributes.author", count: { $sum: 1 } } },
             { $match: { _id: { $ne: null } } },
             { $sort: { count: -1 } },
-            { $limit: 50 },
             { $project: { _id: 0, author: "$_id", count: 1 } },
           ],
           publishers: [
             { $group: { _id: "$attributes.publisher", count: { $sum: 1 } } },
             { $match: { _id: { $ne: null } } },
             { $sort: { count: -1 } },
-            { $limit: 50 },
             { $project: { _id: 0, publisher: "$_id", count: 1 } },
           ],
           languages: [

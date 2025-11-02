@@ -63,6 +63,18 @@ export default function ProductForm({
   const [barcode, setBarcode] = React.useState<string>(
     initialAttrs.barcode ?? "",
   );
+  const [publisherCode, setPublisherCode] = React.useState<string>(
+    (initialAttrs.publisherCode as string) ?? "",
+  );
+  const [color, setColor] = React.useState<string>(
+    (initialAttrs.color as string) ?? "",
+  );
+  const [model, setModel] = React.useState<string>(
+    (initialAttrs.model as string) ?? "",
+  );
+  const [classAttr, setClassAttr] = React.useState<string>(
+    initialAttrs.class ?? "",
+  );
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -102,6 +114,12 @@ export default function ProductForm({
           ...(format.trim() ? { format: format.trim() } : {}),
           ...(isbn.trim() ? { isbn: isbn.trim() } : {}),
           ...(barcode.trim() ? { barcode: barcode.trim() } : {}),
+          ...(publisherCode.trim()
+            ? { publisherCode: publisherCode.trim() }
+            : {}),
+          ...(color.trim() ? { color: color.trim() } : {}),
+          ...(model.trim() ? { model: model.trim() } : {}),
+          ...(classAttr.trim() ? { class: classAttr.trim() } : {}),
         },
       };
       let saved: Product;
@@ -370,6 +388,17 @@ export default function ProductForm({
           />
         </div>
         <div>
+          <label htmlFor="publisherCode" style={label}>
+            Видавничий код
+          </label>
+          <input
+            id="publisherCode"
+            value={publisherCode}
+            onChange={(e) => setPublisherCode(e.target.value)}
+            style={input}
+          />
+        </div>
+        <div>
           <label htmlFor="year" style={label}>
             Рік
           </label>
@@ -390,6 +419,17 @@ export default function ProductForm({
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}
       >
         <div>
+          <label htmlFor="class" style={label}>
+            Клас
+          </label>
+          <input
+            id="class"
+            value={classAttr}
+            onChange={(e) => setClassAttr(e.target.value)}
+            style={input}
+          />
+        </div>
+        <div>
           <label htmlFor="language" style={label}>
             Мова
           </label>
@@ -408,6 +448,33 @@ export default function ProductForm({
             id="subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
+            style={input}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}
+      >
+        <div>
+          <label htmlFor="color" style={label}>
+            Колір
+          </label>
+          <input
+            id="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            style={input}
+          />
+        </div>
+        <div>
+          <label htmlFor="model" style={label}>
+            Модель
+          </label>
+          <input
+            id="model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
             style={input}
           />
         </div>

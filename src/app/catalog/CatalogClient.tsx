@@ -279,7 +279,7 @@ export default function CatalogClient() {
             </Button>
           </ModalTrigger>
           <ModalContent
-            title="Фільтри"
+            title="Фіdsaльтри"
             className={styles.filtersModal ?? ""}
             id="catalog-filters-modal"
           >
@@ -380,7 +380,7 @@ export default function CatalogClient() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Всі автори</SelectItem>
-                      {facets.authors.slice(0, 20).map((a) => (
+                      {facets.authors.map((a) => (
                         <SelectItem key={a.author} value={a.author}>
                           {a.author} ({a.count})
                         </SelectItem>
@@ -405,7 +405,7 @@ export default function CatalogClient() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Всі видавці</SelectItem>
-                      {facets.publishers.slice(0, 20).map((p) => (
+                      {facets.publishers.map((p) => (
                         <SelectItem key={p.publisher} value={p.publisher}>
                           {p.publisher} ({p.count})
                         </SelectItem>
