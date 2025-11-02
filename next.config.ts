@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         hostname: "dumka.top",
         pathname: "**",
       },
+      {
+        protocol: "https",
+        hostname: "knigovan.com",
+        pathname: "**",
+      },
       // Add other image domains if needed
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
