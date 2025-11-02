@@ -48,6 +48,9 @@ const ProductSchema = new Schema<ProductDoc>(
   },
 );
 
+// Create text index for full-text search on title and other searchable fields
+ProductSchema.index({ title: "text", sku: "text" });
+
 export const ProductModel: Model<ProductDoc> =
   (models.Product as Model<ProductDoc>) ||
   model<ProductDoc>("Product", ProductSchema);
