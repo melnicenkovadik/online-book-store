@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
       : "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://res.cloudinary.com https://picsum.photos https://knigovan.com",
+    "img-src 'self' data: https://res.cloudinary.com https://picsum.photos https://knigovan.com https://litera-ltd.com.ua",
     "font-src 'self' data: https://r2cdn.perplexity.ai",
     // В dev режиме нужен webpack-hmr и localhost
     isDev
