@@ -154,8 +154,8 @@ export async function GET(req: Request) {
       1 | -1 | { $meta: "textScore" | "indexKey" }
     > = {};
 
-    // Add text score sorting if using text search
-    if (q && q.length >= 3) {
+    // Add text score sorting if using text search (sort by relevance first)
+    if (useTextSearch) {
       sortStage.score = { $meta: "textScore" };
     }
 
@@ -184,7 +184,12 @@ export async function GET(req: Request) {
     const pipeline: PipelineStage[] = [
       // $text must be first stage in pipeline
       ...(useTextSearch ? [{ $match: { $text: { $search: q } } }] : []),
-      { $addFields: { effectivePrice } },
+      {
+        $addFields: {
+          effectivePrice,
+          ...(useTextSearch ? { score: { $meta: "textScore" } } : {}),
+        },
+      },
       ...(match.$and ? [{ $match: match }] : []),
       { $sort: sortStage },
       {

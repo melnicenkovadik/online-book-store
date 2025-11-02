@@ -49,7 +49,26 @@ const ProductSchema = new Schema<ProductDoc>(
 );
 
 // Create text index for full-text search on title and other searchable fields
-ProductSchema.index({ title: "text", sku: "text" });
+// Weights: title is most important, then author/publisher, then description
+ProductSchema.index(
+  {
+    title: "text",
+    sku: "text",
+    "attributes.author": "text",
+    "attributes.publisher": "text",
+    "attributes.description": "text",
+  },
+  {
+    weights: {
+      title: 10,
+      sku: 8,
+      "attributes.author": 5,
+      "attributes.publisher": 3,
+      "attributes.description": 1,
+    },
+    name: "product_text_search",
+  },
+);
 
 export const ProductModel: Model<ProductDoc> =
   (models.Product as Model<ProductDoc>) ||
