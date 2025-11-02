@@ -51,14 +51,12 @@ export async function GET(req: Request) {
 
     const match: Record<string, unknown> = {};
     const andExpr: Record<string, unknown>[] = [];
+    const useTextSearch = q && q.length >= 3;
 
     // Use text index for search when available
     if (q) {
-      if (q.length >= 3) {
-        // Use text search for longer queries
-        andExpr.push({ $text: { $search: q } });
-      } else {
-        // Use regex for shorter queries
+      if (!useTextSearch) {
+        // Use regex for shorter queries (added to andExpr)
         andExpr.push({
           title: {
             $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
@@ -66,6 +64,7 @@ export async function GET(req: Request) {
           },
         });
       }
+      // Text search is handled separately in pipeline
     }
 
     if (categoryId) {
@@ -183,8 +182,8 @@ export async function GET(req: Request) {
 
     // Optimize pipeline for better performance
     const pipeline: PipelineStage[] = [
-      // Add text score if using text search
-      ...(q && q.length >= 3 ? [{ $match: { $text: { $search: q } } }] : []),
+      // $text must be first stage in pipeline
+      ...(useTextSearch ? [{ $match: { $text: { $search: q } } }] : []),
       { $addFields: { effectivePrice } },
       ...(match.$and ? [{ $match: match }] : []),
       { $sort: sortStage },
