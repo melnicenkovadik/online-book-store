@@ -33,6 +33,16 @@ const nextConfig: NextConfig = {
         hostname: "litera-ltd.com.ua",
         pathname: "**",
       },
+      {
+        protocol: "https",
+        hostname: "www.libra-terra.com.ua",
+        pathname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "www.libra-terra.com.ua",
+        pathname: "**",
+      },
       // Add other image domains if needed
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
