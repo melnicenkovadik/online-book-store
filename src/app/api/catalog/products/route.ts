@@ -47,6 +47,7 @@ export async function GET(req: Request) {
     const language = searchParams.get("language") ?? undefined;
     const coverType = searchParams.get("coverType") ?? undefined;
     const vendor = searchParams.get("vendor") ?? undefined;
+    const classFilter = searchParams.get("class") ?? undefined;
 
     await connectToDB();
 
@@ -148,6 +149,9 @@ export async function GET(req: Request) {
     }
     if (vendor) {
       andExpr.push({ "attributes.source.vendor": vendor });
+    }
+    if (classFilter) {
+      andExpr.push({ "attributes.class": classFilter });
     }
 
     if (andExpr.length) match.$and = andExpr;

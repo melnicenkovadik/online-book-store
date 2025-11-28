@@ -35,6 +35,7 @@ export async function GET(req: Request) {
     const language = searchParams.get("language") ?? undefined;
     const coverType = searchParams.get("coverType") ?? undefined;
     const vendor = searchParams.get("vendor") ?? undefined;
+    const classFilter = searchParams.get("class") ?? undefined;
 
     await connectToDB();
 
@@ -145,6 +146,9 @@ export async function GET(req: Request) {
     if (vendor) {
       andExpr.push({ "attributes.source.vendor": vendor });
     }
+    if (classFilter) {
+      andExpr.push({ "attributes.class": classFilter });
+    }
 
     if (andExpr.length) match.$and = andExpr;
 
@@ -209,6 +213,12 @@ export async function GET(req: Request) {
             { $sort: { count: -1 } },
             { $project: { _id: 0, vendor: "$_id", count: 1 } },
           ],
+          classes: [
+            { $group: { _id: "$attributes.class", count: { $sum: 1 } } },
+            { $match: { _id: { $ne: null } } },
+            { $sort: { _id: 1 } },
+            { $project: { _id: 0, class: "$_id", count: 1 } },
+          ],
         },
       },
     ];
@@ -223,6 +233,7 @@ export async function GET(req: Request) {
       languages: [],
       coverTypes: [],
       vendors: [],
+      classes: [],
     };
 
     // Transform categories array to object
@@ -260,6 +271,10 @@ export async function GET(req: Request) {
         }>,
         vendors: facets.vendors as Array<{
           vendor: string;
+          count: number;
+        }>,
+        classes: facets.classes as Array<{
+          class: string;
           count: number;
         }>,
       },
