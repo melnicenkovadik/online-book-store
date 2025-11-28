@@ -781,11 +781,15 @@ export default function CatalogClient() {
               <div className={styles.cardImage}>
                 {p.images?.[0] ? (
                   <OptimizedImage
+                    loading="eager"
+                    priority={true}
+                    quality={50}
                     src={p.images[0]}
                     alt={p.title}
-                    width={200}
-                    height={200}
-                    style={{ objectFit: "contain" }}
+                    width={240}
+                    height={310}
+                    sizes="(max-width: 768px) 310px, 240px"
+                    style={{ objectFit: "cover" }}
                     loadingComponent={
                       <div className={styles.imagePlaceholder} />
                     }
