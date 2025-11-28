@@ -39,6 +39,7 @@ export default function CatalogClient() {
       publisher: parseAsString,
       language: parseAsString,
       coverType: parseAsString,
+      vendor: parseAsString,
     },
     {
       history: "replace",
@@ -67,6 +68,7 @@ export default function CatalogClient() {
     if (filters.publisher) params.publisher = filters.publisher;
     if (filters.language) params.language = filters.language;
     if (filters.coverType) params.coverType = filters.coverType;
+    if (filters.vendor) params.vendor = filters.vendor;
 
     return params;
   }, [
@@ -82,6 +84,7 @@ export default function CatalogClient() {
     filters.publisher,
     filters.language,
     filters.coverType,
+    filters.vendor,
   ]);
 
   const {
@@ -159,6 +162,7 @@ export default function CatalogClient() {
     if (filters.publisher) params.publisher = filters.publisher;
     if (filters.language) params.language = filters.language;
     if (filters.coverType) params.coverType = filters.coverType;
+    if (filters.vendor) params.vendor = filters.vendor;
 
     return params;
   }, [
@@ -172,6 +176,7 @@ export default function CatalogClient() {
     filters.publisher,
     filters.language,
     filters.coverType,
+    filters.vendor,
   ]);
 
   const { data: facets } = useQuery<FacetsResponse>({
@@ -202,6 +207,7 @@ export default function CatalogClient() {
       publisher: null,
       language: null,
       coverType: null,
+      vendor: null,
     });
   }, [setFilters]);
 
@@ -217,6 +223,7 @@ export default function CatalogClient() {
     if (filters.publisher) count++;
     if (filters.language) count++;
     if (filters.coverType) count++;
+    if (filters.vendor) count++;
     return count;
   }, [
     filters.categoryId,
@@ -229,6 +236,7 @@ export default function CatalogClient() {
     filters.publisher,
     filters.language,
     filters.coverType,
+    filters.vendor,
   ]);
 
   const [isFiltersOpen, setIsFiltersOpen] = React.useState(false);
@@ -465,6 +473,31 @@ export default function CatalogClient() {
                 </div>
               )}
 
+              {/* Постачальник */}
+              {facets?.vendors && facets.vendors.length > 0 && (
+                <div className={styles.filterGroup}>
+                  <div className={styles.filterLabel}>Постачальник</div>
+                  <SelectRoot
+                    value={filters.vendor ?? "all"}
+                    onValueChange={(v) =>
+                      updateFilter({ vendor: v === "all" ? null : v })
+                    }
+                  >
+                    <SelectTrigger className={styles.selectTrigger}>
+                      <SelectValue placeholder="Всі постачальники" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Всі постачальники</SelectItem>
+                      {facets.vendors.map((v) => (
+                        <SelectItem key={v.vendor} value={v.vendor}>
+                          {v.vendor} ({v.count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </div>
+              )}
+
               {/* Чекбокси */}
               <div className={styles.filterGroup}>
                 <div className={styles.filterLabel}>Додатково</div>
@@ -626,6 +659,16 @@ export default function CatalogClient() {
             aria-label="Видалити фільтр за обкладинкою"
           >
             обкладинка: {filters.coverType} ×
+          </button>
+        )}
+        {filters.vendor && (
+          <button
+            type="button"
+            className={styles.chip}
+            onClick={() => updateFilter({ vendor: null })}
+            aria-label="Видалити фільтр за постачальником"
+          >
+            постачальник: {filters.vendor} ×
           </button>
         )}
         {filters.inStock === "true" && (

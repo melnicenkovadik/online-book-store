@@ -18,6 +18,7 @@ export type ProductsQuery = {
   publisher?: string;
   language?: string;
   coverType?: string;
+  vendor?: string;
 };
 
 export type FacetsResponse = {
@@ -28,6 +29,7 @@ export type FacetsResponse = {
   publishers: Array<{ publisher: string; count: number }>;
   languages: Array<{ language: string; count: number }>;
   coverTypes: Array<{ coverType: string; count: number }>;
+  vendors: Array<{ vendor: string; count: number }>;
 };
 
 export const CatalogService = {
@@ -69,6 +71,7 @@ export const CatalogService = {
     if (params.publisher) usp.set("publisher", params.publisher);
     if (params.language) usp.set("language", params.language);
     if (params.coverType) usp.set("coverType", params.coverType);
+    if (params.vendor) usp.set("vendor", params.vendor);
 
     const path = `/api/catalog/products${usp.toString() ? `?${usp.toString()}` : ""}`;
 
@@ -111,6 +114,7 @@ export const CatalogService = {
     if (params.publisher) usp.set("publisher", params.publisher);
     if (params.language) usp.set("language", params.language);
     if (params.coverType) usp.set("coverType", params.coverType);
+    if (params.vendor) usp.set("vendor", params.vendor);
 
     const path = `/api/catalog/facets${usp.toString() ? `?${usp.toString()}` : ""}`;
 

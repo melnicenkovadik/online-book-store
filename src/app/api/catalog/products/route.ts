@@ -46,6 +46,7 @@ export async function GET(req: Request) {
     const publisher = searchParams.get("publisher") ?? undefined;
     const language = searchParams.get("language") ?? undefined;
     const coverType = searchParams.get("coverType") ?? undefined;
+    const vendor = searchParams.get("vendor") ?? undefined;
 
     await connectToDB();
 
@@ -144,6 +145,9 @@ export async function GET(req: Request) {
     }
     if (coverType) {
       andExpr.push({ "attributes.coverType": coverType });
+    }
+    if (vendor) {
+      andExpr.push({ "attributes.source.vendor": vendor });
     }
 
     if (andExpr.length) match.$and = andExpr;
